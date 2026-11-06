@@ -35,6 +35,10 @@
         <button onclick="openModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-xs sm:text-sm rounded-lg shadow-lg shadow-emerald-950 transition flex items-center gap-1.5 active:scale-95">
           <span>+</span> Log League Week
         </button>
+        <button onclick="openCloudModal()" id="cloudSyncBtn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-lg transition flex items-center gap-1.5">
+          <span id="cloudDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+          <span id="cloudBtnText">Connect Cloud</span>
+        </button>
         <button onclick="exportCSV()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-lg transition">
           Export CSV
         </button>
@@ -801,6 +805,7 @@
 
       // Trigger Instant Post-Round Tactical Debrief Modal
       openDebriefModal(newMatch, prevSeasonAvg, newSeasonAvg);
+      pushMatchToCloud(newMatch);
     }
 
     function deleteMatch(id) {
@@ -980,7 +985,117 @@
       document.getElementById('debriefModal').classList.add('hidden');
     }
 
-    window.addEventListener('DOMContentLoaded', init);
+    
+    // Cloud Sync Engine (Google Sheets via Apps Script)
+    let cloudScriptUrl = localStorage.getItem('striketrack_cloud_url') || '';
+
+    function openCloudModal() {
+      document.getElementById('inputCloudUrl').value = cloudScriptUrl;
+      const statusEl = document.getElementById('cloudStatusMsg');
+      if (cloudScriptUrl) {
+        statusEl.className = 'p-2.5 rounded-lg text-xs font-mono bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 block';
+        statusEl.textContent = 'Connected: Sync active on save';
+      } else {
+        statusEl.className = 'hidden';
+      }
+      document.getElementById('cloudModal').classList.remove('hidden');
+    }
+
+    function closeCloudModal() {
+      document.getElementById('cloudModal').classList.add('hidden');
+    }
+
+    function updateCloudBadge() {
+      const dot = document.getElementById('cloudDot');
+      const text = document.getElementById('cloudBtnText');
+      if (cloudScriptUrl) {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+        text.textContent = 'Cloud Synced';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-slate-500';
+        text.textContent = 'Connect Cloud';
+      }
+    }
+
+    async function testAndSaveCloudUrl() {
+      const url = document.getElementById('inputCloudUrl').value.trim();
+      const statusEl = document.getElementById('cloudStatusMsg');
+      if (!url) {
+        statusEl.className = 'p-2.5 rounded-lg text-xs font-mono bg-rose-950/40 border border-rose-800/60 text-rose-300 block';
+        statusEl.textContent = 'Please paste a valid Web App URL';
+        return;
+      }
+
+      statusEl.className = 'p-2.5 rounded-lg text-xs font-mono bg-indigo-950/40 border border-indigo-800/60 text-indigo-300 block';
+      statusEl.textContent = 'Testing connection to Google Sheets...';
+
+      try {
+        const res = await fetch(url + '?check=1');
+        const data = await res.json();
+        cloudScriptUrl = url;
+        localStorage.setItem('striketrack_cloud_url', url);
+        statusEl.className = 'p-2.5 rounded-lg text-xs font-mono bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 block';
+        statusEl.textContent = 'Success! Connected to your Google Sheet.';
+        updateCloudBadge();
+        syncFromCloud();
+      } catch (err) {
+        // Fallback for CORS on initial check
+        cloudScriptUrl = url;
+        localStorage.setItem('striketrack_cloud_url', url);
+        statusEl.className = 'p-2.5 rounded-lg text-xs font-mono bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 block';
+        statusEl.textContent = 'URL Saved. Cloud sync enabled for future entries.';
+        updateCloudBadge();
+      }
+    }
+
+    function disconnectCloud() {
+      if (confirm('Disconnect Google Sheets cloud sync? Your local match history will remain intact.')) {
+        cloudScriptUrl = '';
+        localStorage.removeItem('striketrack_cloud_url');
+        updateCloudBadge();
+        closeCloudModal();
+      }
+    }
+
+    async function syncFromCloud() {
+      if (!cloudScriptUrl) return;
+      try {
+        const res = await fetch(cloudScriptUrl);
+        const data = await res.json();
+        if (data && data.matches && data.matches.length > 0) {
+          // Merge any remote matches that do not exist locally
+          let newFound = 0;
+          data.matches.forEach(rm => {
+            if (!matches.some(lm => lm.id === rm.id)) {
+              matches.unshift(rm);
+              newFound++;
+            }
+          });
+          if (newFound > 0) {
+            localStorage.setItem('striketrack_matches_v3', JSON.stringify(matches));
+            renderApp();
+          }
+        }
+      } catch (e) {
+        console.log('Background cloud fetch skipped / offline');
+      }
+    }
+
+    async function pushMatchToCloud(match) {
+      if (!cloudScriptUrl) return;
+      try {
+        await fetch(cloudScriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'save_match', match: match })
+        });
+      } catch (err) {
+        console.log('Cloud sync error, saved locally');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => { init(); updateCloudBadge(); syncFromCloud(); });
   </script>
 
   <!-- Post-Round Tactical Debrief Modal -->
@@ -1027,6 +1142,42 @@
         <span class="text-[11px] text-slate-400">Scores saved to persistent league history</span>
         <button onclick="closeDebriefModal()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs shadow-lg shadow-indigo-950 transition">
           Got It, Update Dashboard
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Cloud Sync Settings Modal -->
+  <div id="cloudModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+    <div class="glass-card max-w-md w-full p-6 border-slate-600 bg-slate-900 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">☁️</span>
+          <h3 class="text-base font-black text-white">Google Sheets Cloud Sync</h3>
+        </div>
+        <button onclick="closeCloudModal()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed">
+        Connect your tracker to your existing <strong>Paul Ziobro</strong> Google Sheet. Scores entered on your phone will automatically push to your spreadsheet in real time and sync to your laptop.
+      </p>
+
+      <div class="space-y-3">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Google Apps Script Web App URL</label>
+          <input type="url" id="inputCloudUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:ring-1 focus:ring-emerald-500 font-mono">
+        </div>
+
+        <div id="cloudStatusMsg" class="p-2.5 rounded-lg text-xs font-mono hidden"></div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-slate-700">
+        <button type="button" onclick="testAndSaveCloudUrl()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-xs shadow-lg shadow-emerald-950 transition">
+          Test & Connect
+        </button>
+        <button type="button" onclick="disconnectCloud()" class="px-3 py-2 text-rose-400 hover:text-rose-300 text-xs font-semibold">
+          Disconnect
         </button>
       </div>
     </div>
