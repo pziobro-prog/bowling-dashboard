@@ -1,1 +1,406 @@
-index.html
+<!-- Header & Action Bar -->
+<header class="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card p-5 sm:p-6 border-slate-700/80 shadow-xl">
+  <div class="flex items-center gap-3.5">
+    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center text-2xl shadow-lg shadow-indigo-950">
+      🎳
+    </div>
+    <div>
+      <div class="flex items-center gap-2">
+        <h1 class="text-2xl font-black tracking-tight text-white">StrikeTrack Pro</h1>
+        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">v2.6 Active</span>
+      </div>
+      <p class="text-xs text-slate-400 font-medium">Personal Performance Engine, Arsenal Clock & Transition Intelligence</p>
+    </div>
+  </div>
+  <div class="flex flex-wrap items-center gap-2">
+    <button onclick="openModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-xs sm:text-sm rounded-lg shadow-lg shadow-emerald-950 transition flex items-center gap-1.5 active:scale-95">
+      <span>+</span> Log League Week
+    </button>
+    <button onclick="openCloudModal()" id="cloudSyncBtn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-lg transition flex items-center gap-1.5">
+      <span id="cloudDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+      <span id="cloudBtnText">Connect Cloud</span>
+    </button>
+    <button onclick="exportCSV()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-lg transition">
+      Export CSV
+    </button>
+    <button onclick="exportJSON()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-lg transition">
+      Backup JSON
+    </button>
+    <button onclick="resetData()" class="px-2.5 py-2 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/50 text-xs rounded-lg transition" title="Reset back to baseline spreadsheet history">
+      Reset
+    </button>
+  </div>
+</header>
+
+<!-- Filters & Time Window -->
+<section class="glass-card p-4 space-y-3 shadow-md">
+  <div>
+    <div class="flex items-center justify-between mb-1.5">
+      <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Season / League:</span>
+      <span id="activeLeagueBadge" class="text-[11px] text-indigo-400 font-semibold font-mono"></span>
+    </div>
+    <div id="leagueTabs" class="flex flex-wrap gap-1.5"></div>
+  </div>
+
+  <div class="pt-2.5 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-2">
+      <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Time Window:</span>
+      <div id="timeTabs" class="flex flex-wrap gap-1">
+        <button onclick="setTimeWindow('all')" id="tw-all" class="time-btn px-2.5 py-1 text-xs font-semibold rounded-md transition bg-indigo-600 text-white">All Time</button>
+        <button onclick="setTimeWindow('last10')" id="tw-last10" class="time-btn px-2.5 py-1 text-xs font-semibold rounded-md transition bg-slate-800 hover:bg-slate-700 text-slate-300">Last 10 Weeks</button>
+        <button onclick="setTimeWindow('6m')" id="tw-6m" class="time-btn px-2.5 py-1 text-xs font-semibold rounded-md transition bg-slate-800 hover:bg-slate-700 text-slate-300">Past 6 Months</button>
+        <button onclick="setTimeWindow('1y')" id="tw-1y" class="time-btn px-2.5 py-1 text-xs font-semibold rounded-md transition bg-slate-800 hover:bg-slate-700 text-slate-300">Past 1 Year</button>
+      </div>
+    </div>
+    <div id="matchCountLabel" class="text-xs text-slate-400 font-medium font-mono"></div>
+  </div>
+</section>
+
+<!-- Core Metrics Dashboard (5 Cards) -->
+<section class="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+  <div class="glass-card p-4 border-slate-700/80">
+    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">True Average</div>
+    <div id="statAvg" class="text-3xl font-black text-white mt-1">--</div>
+    <div id="statPins" class="text-[11px] text-slate-400 mt-1 font-mono">-- pins / -- games</div>
+  </div>
+
+  <div class="glass-card p-4 border-slate-700/80">
+    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">High Game</div>
+    <div id="statHighGame" class="text-3xl font-black text-amber-400 mt-1">--</div>
+    <div id="stat200s" class="text-[11px] text-slate-400 mt-1 font-mono">-- 200+ (--)</div>
+  </div>
+
+  <div class="glass-card p-4 border-slate-700/80">
+    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">High Series</div>
+    <div id="statHighSeries" class="text-3xl font-black text-emerald-400 mt-1">--</div>
+    <div id="stat600s" class="text-[11px] text-slate-400 mt-1 font-mono">-- 600+ (--)</div>
+  </div>
+
+  <div class="glass-card p-4 border-slate-700/80">
+    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">G1 → G2 → G3 Arc</div>
+    <div id="statGameArc" class="text-base sm:text-lg font-bold text-sky-400 mt-2 font-mono">-- / -- / --</div>
+    <div id="statArcDelta" class="text-[11px] text-slate-400 mt-1 font-mono">Delta: --</div>
+  </div>
+
+  <div class="glass-card p-4 border-slate-700/80 col-span-2 md:col-span-1">
+    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Volatility & Spread</div>
+    <div id="statSpread" class="text-2xl font-black text-purple-400 mt-1 font-mono">-- avg spread</div>
+    <div id="statBounceBack" class="text-[11px] text-slate-400 mt-1 font-mono">Bounce: --</div>
+  </div>
+</section>
+
+<!-- Road to 200 Calculator & Arsenal Maintenance Clock -->
+<section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  
+  <!-- Road to 200 Target Matrix -->
+  <div class="glass-card p-5 border-slate-700 space-y-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-lg">🎯</span>
+        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Road to 200 Target Matrix</h3>
+      </div>
+      <span id="pinDeficitBadge" class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">-- pins / game</span>
+    </div>
+    <p class="text-xs text-slate-300 leading-relaxed" id="roadTo200Text">
+      Calculating pinfall pacing...
+    </p>
+    <div class="grid grid-cols-3 gap-2.5 pt-1 text-center font-mono">
+      <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800">
+        <span class="text-[10px] text-slate-400 block uppercase font-sans">Current Pacing</span>
+        <span id="calcCurrentSeries" class="text-sm font-bold text-white mt-0.5 block">--</span>
+      </div>
+      <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800">
+        <span class="text-[10px] text-slate-400 block uppercase font-sans">To Hit 190.0</span>
+        <span id="calc190Target" class="text-sm font-bold text-amber-400 mt-0.5 block">--</span>
+      </div>
+      <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800">
+        <span class="text-[10px] text-slate-400 block uppercase font-sans">To Hit 200.0</span>
+        <span id="calc200Target" class="text-sm font-bold text-emerald-400 mt-0.5 block">--</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ball Arsenal Maintenance Clock (Fresh ADP 26-27 Config) -->
+  <div class="glass-card p-5 border-slate-700 space-y-3">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <span class="text-lg">🧼</span>
+        <div>
+          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Ball Arsenal Maintenance Clock</h3>
+          <p class="text-[10px] text-slate-400">Fresh start: ADP 26-27 (G1 + ⅔ G2 Solid • ⅓ G2 + G3 Hybrid)</p>
+        </div>
+      </div>
+      <button onclick="resetArsenalCounters()" class="text-[10px] text-slate-400 hover:text-white underline">Reset Clock</button>
+    </div>
+    
+    <div class="space-y-3 pt-1">
+      <!-- Hammer Effect Tour (Solid) -->
+      <div>
+        <div class="flex items-center justify-between text-xs mb-1">
+          <span class="font-bold text-white">Hammer Effect Tour (Solid)</span>
+          <span id="tourGamesBadge" class="font-mono text-slate-300 font-semibold">-- games</span>
+        </div>
+        <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+          <div id="tourProgressBar" class="bg-amber-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+          <span id="tourSurfaceStatus">Surface Refresh: --</span>
+          <span id="tourDetoxStatus">Detox Bath: --</span>
+        </div>
+      </div>
+
+      <!-- Hammer Full Effect (Hybrid) -->
+      <div>
+        <div class="flex items-center justify-between text-xs mb-1">
+          <span class="font-bold text-white">Hammer Full Effect (Hybrid)</span>
+          <span id="fullGamesBadge" class="font-mono text-slate-300 font-semibold">-- games</span>
+        </div>
+        <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+          <div id="fullProgressBar" class="bg-sky-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+        </div>
+        <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+          <span id="fullSurfaceStatus">Surface Refresh: --</span>
+          <span id="fullDetoxStatus">Detox Bath: --</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+<!-- Visual Charts & AI Tactical Coach -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  
+  <!-- Scoring Timeline Chart -->
+  <section class="lg:col-span-2 glass-card p-5 border-slate-700 space-y-4">
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-base font-bold text-white">Series Progression & Rolling 3-Wk Form</h2>
+        <p class="text-xs text-slate-400">Green line is Scratch Series; cyan dashed is 3-week rolling average</p>
+      </div>
+      <span class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">600 Target</span>
+    </div>
+    <div class="w-full overflow-x-auto">
+      <svg id="seriesChart" class="w-full h-56" viewBox="0 0 700 220" preserveAspectRatio="none"></svg>
+    </div>
+  </section>
+
+  <!-- AI Tactical Transition Engine -->
+  <section class="glass-card p-5 border-slate-700 space-y-4">
+    <div class="flex items-center gap-2">
+      <span class="text-xl">⚡</span>
+      <div>
+        <h2 class="text-base font-bold text-white">Transition & Friction Coach</h2>
+        <p class="text-xs text-slate-400">Arsenal timing & physical adjustments</p>
+      </div>
+    </div>
+    <div id="coachInsights" class="space-y-3 text-xs leading-relaxed">
+      <!-- Populated dynamically -->
+    </div>
+  </section>
+</div>
+
+<!-- Match History Table -->
+<section class="glass-card p-5 border-slate-700 space-y-3 shadow-md">
+  <div class="flex items-center justify-between">
+    <div>
+      <h2 class="text-base font-bold text-white">Match History Log</h2>
+      <p class="text-[11px] text-slate-400">Historical matches, equipment transitions & lane environment tags</p>
+    </div>
+    <span id="matchLogCount" class="text-xs text-slate-400 font-mono"></span>
+  </div>
+  <div class="overflow-x-auto max-h-96 custom-scrollbar">
+    <table class="w-full text-left text-xs border-collapse">
+      <thead>
+        <tr class="border-b border-slate-700/80 text-slate-400 uppercase text-[10px] tracking-wider sticky top-0 bg-slate-900/95 backdrop-blur z-10">
+          <th class="py-2.5 px-3">Date</th>
+          <th class="py-2.5 px-3">League</th>
+          <th class="py-2.5 px-3 text-center">Wk</th>
+          <th class="py-2.5 px-3 text-center">G1</th>
+          <th class="py-2.5 px-3 text-center">G2</th>
+          <th class="py-2.5 px-3 text-center">G3</th>
+          <th class="py-2.5 px-3 text-right">Series</th>
+          <th class="py-2.5 px-3 text-right">Avg</th>
+          <th class="py-2.5 px-3">Arsenal & Switch</th>
+          <th class="py-2.5 px-3">Lane Environment</th>
+          <th class="py-2.5 px-2 text-center">Del</th>
+        </tr>
+      </thead>
+      <tbody id="matchTableBody" class="divide-y divide-slate-800 text-slate-200">
+        <!-- Populated via JS -->
+      </tbody>
+    </table>
+  </div>
+</section>
+
+
+  <form id="addMatchForm" onsubmit="handleSaveMatch(event)" class="space-y-4 text-xs">
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="block font-semibold text-slate-300 mb-1">League</label>
+        <select id="inputLeague" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-medium focus:ring-1 focus:ring-emerald-500">
+          <option value="ADP_26-27">ADP 26-27 (Current)</option>
+          <option value="Summer_Mixed_Fun_26">Summer Mixed Fun '26</option>
+          <option value="ADP_25-26">ADP 25-26</option>
+          <option value="Summer_Mixed_Fun_25">Summer Mixed Fun '25</option>
+          <option value="ADP_24-25">ADP 24-25</option>
+          <option value="Summer_Mixed_Fun_24">Summer Mixed Fun '24</option>
+          <option value="ADP_23-24">ADP 23-24</option>
+        </select>
+      </div>
+      <div>
+        <label class="block font-semibold text-slate-300 mb-1">Date</label>
+        <input type="date" id="inputDate" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-medium focus:ring-1 focus:ring-emerald-500">
+      </div>
+    </div>
+
+    <!-- 3-Game Scratch Inputs -->
+    <div class="grid grid-cols-3 gap-3">
+      <div>
+        <label class="block font-semibold text-slate-300 mb-1">Game 1</label>
+        <input type="number" id="inputG1" min="0" max="300" required placeholder="e.g. 195" oninput="calcSeriesPreview()" class="w-full text-center text-lg font-black bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-1 focus:ring-emerald-500">
+      </div>
+      <div>
+        <label class="block font-semibold text-slate-300 mb-1">Game 2</label>
+        <input type="number" id="inputG2" min="0" max="300" required placeholder="e.g. 180" oninput="calcSeriesPreview()" class="w-full text-center text-lg font-black bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-1 focus:ring-emerald-500">
+      </div>
+      <div>
+        <label class="block font-semibold text-slate-300 mb-1">Game 3</label>
+        <input type="number" id="inputG3" min="0" max="300" required placeholder="e.g. 210" oninput="calcSeriesPreview()" class="w-full text-center text-lg font-black bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-1 focus:ring-emerald-500">
+      </div>
+    </div>
+
+    <div class="bg-slate-800/90 p-3 rounded-lg border border-slate-700 flex items-center justify-between text-xs font-mono">
+      <span class="text-slate-400">Night Total:</span>
+      <span class="text-emerald-400 font-bold text-sm" id="seriesPreview">Series: -- | Avg: --</span>
+    </div>
+
+    <!-- Arsenal Transition Selectors -->
+    <div class="p-3 bg-slate-800/50 rounded-lg border border-slate-700/80 space-y-2.5">
+      <span class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider block">Arsenal Transition (Optional)</span>
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="block text-[11px] text-slate-400 mb-1">Starting Ball</label>
+          <select id="inputStartBall" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-white">
+            <option value="Effect Tour (Solid)">Effect Tour (Solid)</option>
+            <option value="Full Effect (Hybrid)">Full Effect (Hybrid)</option>
+            <option value="Raw Hammer / Other">Raw Hammer / Other</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] text-slate-400 mb-1">Finishing Ball</label>
+          <select id="inputFinishBall" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-white">
+            <option value="Full Effect (Hybrid)">Full Effect (Hybrid)</option>
+            <option value="Effect Tour (Solid)">Effect Tour (Solid)</option>
+            <option value="Same (No Switch)">Same (No Switch)</option>
+            <option value="Raw Hammer / Other">Raw Hammer / Other</option>
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="block text-[11px] text-slate-400 mb-1">Switch Timing (if swapped)</label>
+        <select id="inputSwitchTiming" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-white">
+          <option value="Mid Game 2 (Frames 5-7)">Mid Game 2 (Frames 5-7)</option>
+          <option value="Start of Game 3">Start of Game 3</option>
+          <option value="Mid Game 3">Mid Game 3</option>
+          <option value="None">None (Threw same ball all 3 games)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Lane Condition & Pair Friction Tags -->
+    <div class="p-3 bg-slate-800/50 rounded-lg border border-slate-700/80 space-y-2.5">
+      <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">Lane Condition & Pair Traffic (Optional)</span>
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="block text-[11px] text-slate-400 mb-1">Lane Friction</label>
+          <select id="inputFriction" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-white">
+            <option value="Standard / Clean Heads">Standard / Clean Heads</option>
+            <option value="Burnt Heads (Early Hook)">Burnt Heads (Early Hook)</option>
+            <option value="Heavy Carrydown (Skid/Weak)">Heavy Carrydown (Skid/Weak)</option>
+            <option value="Flying Backends">Flying Backends</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] text-slate-400 mb-1">Pair Traffic</label>
+          <select id="inputTraffic" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-white">
+            <option value="Normal League Pace">Normal League Pace</option>
+            <option value="Heavy Cranker / High Rev Pair">Heavy Cranker / High Rev Pair</option>
+            <option value="Stroker / Direct Line Pair">Stroker / Direct Line Pair</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <label class="block font-semibold text-slate-300 mb-1">Notes (Optional)</label>
+      <input type="text" id="inputNotes" placeholder="e.g., missed two 10-pins in G2; stepped 3 boards left in G3" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-1 focus:ring-emerald-500">
+    </div>
+
+    <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-700">
+      <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-medium">Cancel</button>
+      <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold shadow-lg shadow-emerald-950">Save Match Record</button>
+    </div>
+  </form>
+</div>
+
+
+  <!-- Quick Series Summary Cards -->
+  <div class="grid grid-cols-3 gap-2.5 text-center font-mono">
+    <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60">
+      <span class="text-[10px] text-slate-400 uppercase font-sans font-semibold block">Series</span>
+      <span id="debriefSeries" class="text-xl font-black text-white mt-0.5 block">--</span>
+      <span id="debriefAvg" class="text-[10px] text-slate-400">(-- avg)</span>
+    </div>
+    <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60">
+      <span class="text-[10px] text-slate-400 uppercase font-sans font-semibold block">Game Arc</span>
+      <span id="debriefArc" class="text-xs font-bold text-sky-400 mt-1 block">-- / -- / --</span>
+      <span id="debriefArcDelta" class="text-[10px] text-slate-400">--</span>
+    </div>
+    <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60">
+      <span class="text-[10px] text-slate-400 uppercase font-sans font-semibold block">Vs Season Avg</span>
+      <span id="debriefDelta" class="text-xl font-black mt-0.5 block">--</span>
+      <span id="debriefNewAvg" class="text-[10px] text-slate-400">--</span>
+    </div>
+  </div>
+
+  <!-- Dynamic Diagnosis -->
+  <div id="debriefDiagnosis" class="space-y-3 text-xs leading-relaxed"></div>
+
+  <div class="pt-2 border-t border-slate-700/80 flex items-center justify-between">
+    <span class="text-[11px] text-slate-400">Scores saved to persistent league history</span>
+    <button onclick="closeDebriefModal()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs shadow-lg shadow-indigo-950 transition">
+      Got It, Update Dashboard
+    </button>
+  </div>
+</div>
+
+
+  <p class="text-xs text-slate-300 leading-relaxed">
+    Connect your tracker to your existing <strong>Paul Ziobro</strong> Google Sheet. Scores entered on your phone will automatically push to your spreadsheet in real time and sync to your laptop.
+  </p>
+
+  <div class="space-y-3">
+    <div>
+      <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Google Apps Script Web App URL</label>
+      <input type="url" id="inputCloudUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:ring-1 focus:ring-emerald-500 font-mono">
+    </div>
+
+    <div>
+      <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Passcode / Secret Key</label>
+      <input type="password" id="inputCloudKey" placeholder="e.g. StrikeSquad2026" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:ring-1 focus:ring-emerald-500 font-mono">
+      <p class="text-[10px] text-slate-400 mt-1">Must match the SECRET_KEY set in your Google Apps Script.</p>
+    </div>
+
+    <div id="cloudStatusMsg" class="p-2.5 rounded-lg text-xs font-mono hidden"></div>
+  </div>
+
+  <div class="flex items-center justify-between pt-3 border-t border-slate-700">
+    <button type="button" onclick="testAndSaveCloudUrl()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-xs shadow-lg shadow-emerald-950 transition">
+      Test & Connect
+    </button>
+    <button type="button" onclick="disconnectCloud()" class="px-3 py-2 text-rose-400 hover:text-rose-300 text-xs font-semibold">
+      Disconnect
+    </button>
+  </div>
+</div>
