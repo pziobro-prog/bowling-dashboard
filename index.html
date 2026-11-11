@@ -1,406 +1,1217 @@
-<!-- Header & Action Bar -->
-<header class="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card p-5 sm:p-6 border-slate-700/80 shadow-xl">
-  <div class="flex items-center gap-3.5">
-    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center text-2xl shadow-lg shadow-indigo-950">
-      🎳
-    </div>
-    <div>
-      <div class="flex items-center gap-2">
-        <h1 class="text-2xl font-black tracking-tight text-white">StrikeTrack Pro</h1>
-        <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">v2.6 Active</span>
-      </div>
-      <p class="text-xs text-slate-400 font-medium">Personal Performance Engine, Arsenal Clock & Transition Intelligence</p>
-    </div>
-  </div>
-  <div class="flex flex-wrap items-center gap-2">
-    <button onclick="openModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-xs sm:text-sm rounded-lg shadow-lg shadow-emerald-950 transition flex items-center gap-1.5 active:scale-95">
-      <span>+</span> Log League Week
-    </button>
-    <button onclick="openCloudModal()" id="cloudSyncBtn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-lg transition flex items-center gap-1.5">
-      <span id="cloudDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
-      <span id="cloudBtnText">Connect Cloud</span>
-    </button>
-    <button onclick="exportCSV()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-lg transition">
-      Export CSV
-    </button>
-    <button onclick="exportJSON()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-lg transition">
-      Backup JSON
-    </button>
-    <button onclick="resetData()" class="px-2.5 py-2 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/50 text-xs rounded-lg transition" title="Reset back to baseline spreadsheet history">
-      Reset
-    </button>
-  </div>
-</header>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StrikeTrack Pro | Bowling Intelligence & Arsenal System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background-color: #090d16; color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .glass-card { background: rgba(22, 30, 46, 0.75); backdrop-filter: blur(10px); border: 1px solid rgba(51, 65, 85, 0.5); border-radius: 1rem; }
+    input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .custom-scrollbar::-webkit-scrollbar { height: 6px; width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); border-radius: 4px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(71, 85, 105, 0.8); border-radius: 4px; }
+  </style>
+</head>
+<body class="min-h-screen p-3 sm:p-5 md:p-8">
+  <div class="max-w-6xl mx-auto space-y-6">
 
-<!-- Filters & Time Window -->
-<section class="glass-card p-4 space-y-3 shadow-md">
-  <div>
-    <div class="flex items-center justify-between mb-1.5">
-      <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Season / League:</span>
-      <span id="activeLeagueBadge" class="text-[11px] text-indigo-400 font-semibold font-mono"></span>
-    </div>
-    <div id="leagueTabs" class="flex flex-wrap gap-1.5"></div>
-  </div>
-
-  <div class="pt-2.5 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-3">
-    <div class="flex items-center gap-2">
-      <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Time Window:</span>
-      <div id="timeTabs" class="flex flex-wrap gap-1">
-        <button onclick="setTimeWindow('all')" id="tw-all" class="time-btn px-2.5 py-1 text-xs font-semibold rounded-md transition bg-indigo-600 text-white">All Time</button>
-        <button onclick="setTimeWindow('last10')" id="tw-last10" class="time-btn px-2.5 py-1 text-xs font-semibold rounded-md transition bg-slate-800 hover:bg-slate-700 text-slate-300">Last 10 Weeks</button>
-        <button onclick="setTimeWindow('6m')" id="tw-6m" class="time-btn px-2.5 py-1 text-xs font-semibold rounded-md transition bg-slate-800 hover:bg-slate-700 text-slate-300">Past 6 Months</button>
-        <button onclick="setTimeWindow('1y')" id="tw-1y" class="time-btn px-2.5 py-1 text-xs font-semibold rounded-md transition bg-slate-800 hover:bg-slate-700 text-slate-300">Past 1 Year</button>
-      </div>
-    </div>
-    <div id="matchCountLabel" class="text-xs text-slate-400 font-medium font-mono"></div>
-  </div>
-</section>
-
-<!-- Core Metrics Dashboard (5 Cards) -->
-<section class="grid grid-cols-2 md:grid-cols-5 gap-3.5">
-  <div class="glass-card p-4 border-slate-700/80">
-    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">True Average</div>
-    <div id="statAvg" class="text-3xl font-black text-white mt-1">--</div>
-    <div id="statPins" class="text-[11px] text-slate-400 mt-1 font-mono">-- pins / -- games</div>
-  </div>
-
-  <div class="glass-card p-4 border-slate-700/80">
-    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">High Game</div>
-    <div id="statHighGame" class="text-3xl font-black text-amber-400 mt-1">--</div>
-    <div id="stat200s" class="text-[11px] text-slate-400 mt-1 font-mono">-- 200+ (--)</div>
-  </div>
-
-  <div class="glass-card p-4 border-slate-700/80">
-    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">High Series</div>
-    <div id="statHighSeries" class="text-3xl font-black text-emerald-400 mt-1">--</div>
-    <div id="stat600s" class="text-[11px] text-slate-400 mt-1 font-mono">-- 600+ (--)</div>
-  </div>
-
-  <div class="glass-card p-4 border-slate-700/80">
-    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">G1 → G2 → G3 Arc</div>
-    <div id="statGameArc" class="text-base sm:text-lg font-bold text-sky-400 mt-2 font-mono">-- / -- / --</div>
-    <div id="statArcDelta" class="text-[11px] text-slate-400 mt-1 font-mono">Delta: --</div>
-  </div>
-
-  <div class="glass-card p-4 border-slate-700/80 col-span-2 md:col-span-1">
-    <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Volatility & Spread</div>
-    <div id="statSpread" class="text-2xl font-black text-purple-400 mt-1 font-mono">-- avg spread</div>
-    <div id="statBounceBack" class="text-[11px] text-slate-400 mt-1 font-mono">Bounce: --</div>
-  </div>
-</section>
-
-<!-- Road to 200 Calculator & Arsenal Maintenance Clock -->
-<section class="grid grid-cols-1 md:grid-cols-2 gap-4">
-  
-  <!-- Road to 200 Target Matrix -->
-  <div class="glass-card p-5 border-slate-700 space-y-3">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <span class="text-lg">🎯</span>
-        <h3 class="text-sm font-bold text-white uppercase tracking-wider">Road to 200 Target Matrix</h3>
-      </div>
-      <span id="pinDeficitBadge" class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">-- pins / game</span>
-    </div>
-    <p class="text-xs text-slate-300 leading-relaxed" id="roadTo200Text">
-      Calculating pinfall pacing...
-    </p>
-    <div class="grid grid-cols-3 gap-2.5 pt-1 text-center font-mono">
-      <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800">
-        <span class="text-[10px] text-slate-400 block uppercase font-sans">Current Pacing</span>
-        <span id="calcCurrentSeries" class="text-sm font-bold text-white mt-0.5 block">--</span>
-      </div>
-      <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800">
-        <span class="text-[10px] text-slate-400 block uppercase font-sans">To Hit 190.0</span>
-        <span id="calc190Target" class="text-sm font-bold text-amber-400 mt-0.5 block">--</span>
-      </div>
-      <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800">
-        <span class="text-[10px] text-slate-400 block uppercase font-sans">To Hit 200.0</span>
-        <span id="calc200Target" class="text-sm font-bold text-emerald-400 mt-0.5 block">--</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- Ball Arsenal Maintenance Clock (Fresh ADP 26-27 Config) -->
-  <div class="glass-card p-5 border-slate-700 space-y-3">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-2">
-        <span class="text-lg">🧼</span>
+    <!-- Header & Action Bar -->
+    <header class="flex flex-col md:flex-row md:items-center justify-between gap-4 glass-card p-5 sm:p-6 border-slate-700/80 shadow-xl">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center text-2xl shadow-lg shadow-indigo-950">
+          🎳
+        </div>
         <div>
-          <h3 class="text-sm font-bold text-white uppercase tracking-wider">Ball Arsenal Maintenance Clock</h3>
-          <p class="text-[10px] text-slate-400">Fresh start: ADP 26-27 (G1 + ⅔ G2 Solid • ⅓ G2 + G3 Hybrid)</p>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-black tracking-tight text-white">StrikeTrack Pro</h1>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">v2.4 Active</span>
+          </div>
+          <p class="text-xs text-slate-400 font-medium">Personal Performance Engine, Arsenal Clock & Transition Intelligence</p>
         </div>
       </div>
-      <button onclick="resetArsenalCounters()" class="text-[10px] text-slate-400 hover:text-white underline">Reset Clock</button>
-    </div>
-    
-    <div class="space-y-3 pt-1">
-      <!-- Hammer Effect Tour (Solid) -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="openModal()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 font-bold text-white text-xs sm:text-sm rounded-lg shadow-lg shadow-emerald-950 transition flex items-center gap-1.5 active:scale-95">
+          <span>+</span> Log League Week
+        </button>
+        <button onclick="openCloudModal()" id="cloudSyncBtn" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-lg transition flex items-center gap-1.5">
+          <span id="cloudDot" class="w-2 h-2 rounded-full bg-slate-500"></span>
+          <span id="cloudBtnText">Connect Cloud</span>
+        </button>
+        <button onclick="exportCSV()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-lg transition">
+          Export CSV
+        </button>
+        <button onclick="exportJSON()" class="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold rounded-lg transition">
+          Backup JSON
+        </button>
+        <button onclick="resetData()" class="px-2.5 py-2 text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-transparent hover:border-rose-900/50 text-xs rounded-lg transition" title="Reset back to baseline spreadsheet history">
+          Reset
+        </button>
+      </div>
+    </header>
+
+    <!-- Filters & Time Window -->
+    <section class="glass-card p-4 space-y-3 shadow-md">
       <div>
-        <div class="flex items-center justify-between text-xs mb-1">
-          <span class="font-bold text-white">Hammer Effect Tour (Solid)</span>
-          <span id="tourGamesBadge" class="font-mono text-slate-300 font-semibold">-- games</span>
+        <div class="flex items-center justify-between mb-1.5">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Season / League:</span>
+          <span id="activeLeagueBadge" class="text-[11px] text-indigo-400 font-semibold font-mono"></span>
         </div>
-        <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
-          <div id="tourProgressBar" class="bg-amber-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+        <div id="leagueTabs" class="flex flex-wrap gap-1.5"></div>
+      </div>
+
+      <div class="pt-2.5 border-t border-slate-700/60 flex flex-wrap items-center justify-between gap-3">
+        <div class="flex items-center gap-2">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Time Window:</span>
+          <div id="timeTabs" class="flex flex-wrap gap-1">
+            <button onclick="setTimeWindow('all')" id="tw-all" class="time-btn px-2.5 py-1 text-xs font-semibold rounded-md transition bg-indigo-600 text-white">All Time</button>
+            <button onclick="setTimeWindow('last10')" id="tw-last10" class="time-btn px-2.5 py-1 text-xs font-semibold rounded-md transition bg-slate-800 hover:bg-slate-700 text-slate-300">Last 10 Weeks</button>
+            <button onclick="setTimeWindow('6m')" id="tw-6m" class="time-btn px-2.5 py-1 text-xs font-semibold rounded-md transition bg-slate-800 hover:bg-slate-700 text-slate-300">Past 6 Months</button>
+            <button onclick="setTimeWindow('1y')" id="tw-1y" class="time-btn px-2.5 py-1 text-xs font-semibold rounded-md transition bg-slate-800 hover:bg-slate-700 text-slate-300">Past 1 Year</button>
+          </div>
         </div>
-        <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
-          <span id="tourSurfaceStatus">Surface Refresh: --</span>
-          <span id="tourDetoxStatus">Detox Bath: --</span>
+        <div id="matchCountLabel" class="text-xs text-slate-400 font-medium font-mono"></div>
+      </div>
+    </section>
+
+    <!-- Core Metrics Dashboard (5 Cards) -->
+    <section class="grid grid-cols-2 md:grid-cols-5 gap-3.5">
+      <div class="glass-card p-4 border-slate-700/80">
+        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">True Average</div>
+        <div id="statAvg" class="text-3xl font-black text-white mt-1">--</div>
+        <div id="statPins" class="text-[11px] text-slate-400 mt-1 font-mono">-- pins / -- games</div>
+      </div>
+
+      <div class="glass-card p-4 border-slate-700/80">
+        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">High Game</div>
+        <div id="statHighGame" class="text-3xl font-black text-amber-400 mt-1">--</div>
+        <div id="stat200s" class="text-[11px] text-slate-400 mt-1 font-mono">-- 200+ (--)</div>
+      </div>
+
+      <div class="glass-card p-4 border-slate-700/80">
+        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">High Series</div>
+        <div id="statHighSeries" class="text-3xl font-black text-emerald-400 mt-1">--</div>
+        <div id="stat600s" class="text-[11px] text-slate-400 mt-1 font-mono">-- 600+ (--)</div>
+      </div>
+
+      <div class="glass-card p-4 border-slate-700/80">
+        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">G1 → G2 → G3 Arc</div>
+        <div id="statGameArc" class="text-base sm:text-lg font-bold text-sky-400 mt-2 font-mono">-- / -- / --</div>
+        <div id="statArcDelta" class="text-[11px] text-slate-400 mt-1 font-mono">Delta: --</div>
+      </div>
+
+      <div class="glass-card p-4 border-slate-700/80 col-span-2 md:col-span-1">
+        <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Volatility & Spread</div>
+        <div id="statSpread" class="text-2xl font-black text-purple-400 mt-1 font-mono">-- avg spread</div>
+        <div id="statBounceBack" class="text-[11px] text-slate-400 mt-1 font-mono">Bounce: --</div>
+      </div>
+    </section>
+
+    <!-- Road to 200 Calculator & Arsenal Maintenance Clock (NEW) -->
+    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      
+      <!-- Road to 200 & Milestone Calculator -->
+      <div class="glass-card p-5 border-slate-700 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🎯</span>
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider">Road to 200 Target Matrix</h3>
+          </div>
+          <span id="pinDeficitBadge" class="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">-- pins / game</span>
+        </div>
+        <p class="text-xs text-slate-300 leading-relaxed" id="roadTo200Text">
+          Calculating pinfall pacing...
+        </p>
+        <div class="grid grid-cols-3 gap-2.5 pt-1 text-center font-mono">
+          <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800">
+            <span class="text-[10px] text-slate-400 block uppercase font-sans">Current Pacing</span>
+            <span id="calcCurrentSeries" class="text-sm font-bold text-white mt-0.5 block">--</span>
+          </div>
+          <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800">
+            <span class="text-[10px] text-slate-400 block uppercase font-sans">To Hit 190.0</span>
+            <span id="calc190Target" class="text-sm font-bold text-amber-400 mt-0.5 block">--</span>
+          </div>
+          <div class="bg-slate-900/70 p-2.5 rounded-lg border border-slate-800">
+            <span class="text-[10px] text-slate-400 block uppercase font-sans">To Hit 200.0</span>
+            <span id="calc200Target" class="text-sm font-bold text-emerald-400 mt-0.5 block">--</span>
+          </div>
         </div>
       </div>
 
-      <!-- Hammer Full Effect (Hybrid) -->
-      <div>
-        <div class="flex items-center justify-between text-xs mb-1">
-          <span class="font-bold text-white">Hammer Full Effect (Hybrid)</span>
-          <span id="fullGamesBadge" class="font-mono text-slate-300 font-semibold">-- games</span>
+      <!-- Ball Arsenal Maintenance Clock -->
+      <div class="glass-card p-5 border-slate-700 space-y-3">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">🧼</span>
+            <h3 class="text-sm font-bold text-white uppercase tracking-wider">Ball Arsenal Maintenance Clock</h3>
+          </div>
+          <button onclick="resetArsenalCounters()" class="text-[10px] text-slate-400 hover:text-white underline">Reset Clock</button>
         </div>
-        <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
-          <div id="fullProgressBar" class="bg-sky-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-        </div>
-        <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
-          <span id="fullSurfaceStatus">Surface Refresh: --</span>
-          <span id="fullDetoxStatus">Detox Bath: --</span>
+        
+        <div class="space-y-3 pt-1">
+          <!-- Hammer Effect Tour (Solid) -->
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="font-bold text-white">Hammer Effect Tour (Solid)</span>
+              <span id="tourGamesBadge" class="font-mono text-slate-300 font-semibold">-- games</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+              <div id="tourProgressBar" class="bg-amber-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+              <span id="tourSurfaceStatus">Surface Refresh: --</span>
+              <span id="tourDetoxStatus">Detox Bath: --</span>
+            </div>
+          </div>
+
+          <!-- Hammer Full Effect (Hybrid) -->
+          <div>
+            <div class="flex items-center justify-between text-xs mb-1">
+              <span class="font-bold text-white">Hammer Full Effect (Hybrid)</span>
+              <span id="fullGamesBadge" class="font-mono text-slate-300 font-semibold">-- games</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden border border-slate-700">
+              <div id="fullProgressBar" class="bg-sky-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+            <div class="flex justify-between text-[10px] text-slate-400 mt-1 font-mono">
+              <span id="fullSurfaceStatus">Surface Refresh: --</span>
+              <span id="fullDetoxStatus">Detox Bath: --</span>
+            </div>
+          </div>
         </div>
       </div>
+
+    </section>
+
+    <!-- Visual Charts & AI Tactical Coach -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      
+      <!-- Scoring Timeline Chart -->
+      <section class="lg:col-span-2 glass-card p-5 border-slate-700 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-base font-bold text-white">Series Progression & Rolling 3-Wk Form</h2>
+            <p class="text-xs text-slate-400">Green line is Scratch Series; cyan dashed is 3-week rolling average</p>
+          </div>
+          <span class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">600 Target</span>
+        </div>
+        <div class="w-full overflow-x-auto">
+          <svg id="seriesChart" class="w-full h-56" viewBox="0 0 700 220" preserveAspectRatio="none"></svg>
+        </div>
+      </section>
+
+      <!-- AI Tactical Transition Engine -->
+      <section class="glass-card p-5 border-slate-700 space-y-4">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">⚡</span>
+          <div>
+            <h2 class="text-base font-bold text-white">Transition & Friction Coach</h2>
+            <p class="text-xs text-slate-400">Arsenal timing & physical adjustments</p>
+          </div>
+        </div>
+        <div id="coachInsights" class="space-y-3 text-xs leading-relaxed">
+          <!-- Populated dynamically -->
+        </div>
+      </section>
+    </div>
+
+    <!-- Match History Table -->
+    <section class="glass-card p-5 border-slate-700 space-y-3 shadow-md">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-base font-bold text-white">Match History Log</h2>
+          <p class="text-[11px] text-slate-400">Historical matches, equipment transitions & lane environment tags</p>
+        </div>
+        <span id="matchLogCount" class="text-xs text-slate-400 font-mono"></span>
+      </div>
+      <div class="overflow-x-auto max-h-96 custom-scrollbar">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead>
+            <tr class="border-b border-slate-700/80 text-slate-400 uppercase text-[10px] tracking-wider sticky top-0 bg-slate-900/95 backdrop-blur z-10">
+              <th class="py-2.5 px-3">Date</th>
+              <th class="py-2.5 px-3">League</th>
+              <th class="py-2.5 px-3 text-center">Wk</th>
+              <th class="py-2.5 px-3 text-center">G1</th>
+              <th class="py-2.5 px-3 text-center">G2</th>
+              <th class="py-2.5 px-3 text-center">G3</th>
+              <th class="py-2.5 px-3 text-right">Series</th>
+              <th class="py-2.5 px-3 text-right">Avg</th>
+              <th class="py-2.5 px-3">Arsenal & Switch</th>
+              <th class="py-2.5 px-3">Lane Environment</th>
+              <th class="py-2.5 px-2 text-center">Del</th>
+            </tr>
+          </thead>
+          <tbody id="matchTableBody" class="divide-y divide-slate-800 text-slate-200">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Log League Week Modal (With Transition & Friction Selectors) -->
+  <div id="logModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div class="glass-card max-w-lg w-full p-6 border-slate-600 bg-slate-900 shadow-2xl space-y-4 my-8">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">🎳</span>
+          <h3 class="text-lg font-black text-white">Log League Week</h3>
+        </div>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <form id="addMatchForm" onsubmit="handleSaveMatch(event)" class="space-y-4 text-xs">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">League</label>
+            <select id="inputLeague" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-medium focus:ring-1 focus:ring-emerald-500">
+              <option value="ADP_26-27">ADP 26-27 (Current)</option>
+              <option value="Summer_Mixed_Fun_26">Summer Mixed Fun '26</option>
+              <option value="ADP_25-26">ADP 25-26</option>
+              <option value="Summer_Mixed_Fun_25">Summer Mixed Fun '25</option>
+              <option value="ADP_24-25">ADP 24-25</option>
+              <option value="Summer_Mixed_Fun_24">Summer Mixed Fun '24</option>
+              <option value="ADP_23-24">ADP 23-24</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Date</label>
+            <input type="date" id="inputDate" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-medium focus:ring-1 focus:ring-emerald-500">
+          </div>
+        </div>
+
+        <!-- 3-Game Scratch Inputs -->
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Game 1</label>
+            <input type="number" id="inputG1" min="0" max="300" required placeholder="e.g. 195" oninput="calcSeriesPreview()" class="w-full text-center text-lg font-black bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-1 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Game 2</label>
+            <input type="number" id="inputG2" min="0" max="300" required placeholder="e.g. 180" oninput="calcSeriesPreview()" class="w-full text-center text-lg font-black bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-1 focus:ring-emerald-500">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-300 mb-1">Game 3</label>
+            <input type="number" id="inputG3" min="0" max="300" required placeholder="e.g. 210" oninput="calcSeriesPreview()" class="w-full text-center text-lg font-black bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-1 focus:ring-emerald-500">
+          </div>
+        </div>
+
+        <div class="bg-slate-800/90 p-3 rounded-lg border border-slate-700 flex items-center justify-between text-xs font-mono">
+          <span class="text-slate-400">Night Total:</span>
+          <span class="text-emerald-400 font-bold text-sm" id="seriesPreview">Series: -- | Avg: --</span>
+        </div>
+
+        <!-- Zero-Friction Arsenal Transition Dropdowns (Option 1) -->
+        <div class="p-3 bg-slate-800/50 rounded-lg border border-slate-700/80 space-y-2.5">
+          <span class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider block">Arsenal Transition (Optional)</span>
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Starting Ball</label>
+              <select id="inputStartBall" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-white">
+                <option value="Effect Tour (Solid)">Effect Tour (Solid)</option>
+                <option value="Full Effect (Hybrid)">Full Effect (Hybrid)</option>
+                <option value="Raw Hammer / Other">Raw Hammer / Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Finishing Ball</label>
+              <select id="inputFinishBall" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-white">
+                <option value="Same (No Switch)">Same (No Switch)</option>
+                <option value="Full Effect (Hybrid)">Full Effect (Hybrid)</option>
+                <option value="Effect Tour (Solid)">Effect Tour (Solid)</option>
+                <option value="Raw Hammer / Other">Raw Hammer / Other</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Switch Timing (if swapped)</label>
+            <select id="inputSwitchTiming" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-white">
+              <option value="None">None (Threw same ball all 3 games)</option>
+              <option value="Mid Game 2 (Frames 5-7)">Mid Game 2 (Frames 5-7)</option>
+              <option value="Start of Game 3">Start of Game 3</option>
+              <option value="Mid Game 3">Mid Game 3</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Lane Condition & Pair Friction Tags (Option 3) -->
+        <div class="p-3 bg-slate-800/50 rounded-lg border border-slate-700/80 space-y-2.5">
+          <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">Lane Condition & Pair Traffic (Optional)</span>
+          <div class="grid grid-cols-2 gap-2.5">
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Lane Friction</label>
+              <select id="inputFriction" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-white">
+                <option value="Standard / Clean Heads">Standard / Clean Heads</option>
+                <option value="Burnt Heads (Early Hook)">Burnt Heads (Early Hook)</option>
+                <option value="Heavy Carrydown (Skid/Weak)">Heavy Carrydown (Skid/Weak)</option>
+                <option value="Flying Backends">Flying Backends</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[11px] text-slate-400 mb-1">Pair Traffic</label>
+              <select id="inputTraffic" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-white">
+                <option value="Normal League Pace">Normal League Pace</option>
+                <option value="Heavy Cranker / High Rev Pair">Heavy Cranker / High Rev Pair</option>
+                <option value="Stroker / Direct Line Pair">Stroker / Direct Line Pair</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Notes (Optional)</label>
+          <input type="text" id="inputNotes" placeholder="e.g., missed two 10-pins in G2; stepped 3 boards left in G3" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-1 focus:ring-emerald-500">
+        </div>
+
+        <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-700">
+          <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-medium">Cancel</button>
+          <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold shadow-lg shadow-emerald-950">Save Match Record</button>
+        </div>
+      </form>
     </div>
   </div>
 
-</section>
+  <script>
+    // 100% verified baseline datasets extracted directly from your spreadsheets
+    const RAW_BASELINE = [{"id": "ADP_23-24-W1", "league": "ADP_23-24", "week": 1, "date": "2023-09-11", "g1": 180, "g2": 167, "g3": 159, "series": 506, "avg": 168.7}, {"id": "ADP_23-24-W2", "league": "ADP_23-24", "week": 2, "date": "2023-09-18", "g1": 137, "g2": 127, "g3": 120, "series": 384, "avg": 128.0}, {"id": "ADP_23-24-W3", "league": "ADP_23-24", "week": 3, "date": "2023-09-25", "g1": 178, "g2": 181, "g3": 139, "series": 498, "avg": 166.0}, {"id": "ADP_23-24-W4", "league": "ADP_23-24", "week": 4, "date": "2023-10-02", "g1": 203, "g2": 148, "g3": 190, "series": 541, "avg": 180.3}, {"id": "ADP_23-24-W5", "league": "ADP_23-24", "week": 5, "date": "2023-10-09", "g1": 176, "g2": 174, "g3": 156, "series": 506, "avg": 168.7}, {"id": "ADP_23-24-W6", "league": "ADP_23-24", "week": 6, "date": "2023-10-16", "g1": 118, "g2": 146, "g3": 160, "series": 424, "avg": 141.3}, {"id": "ADP_23-24-W7", "league": "ADP_23-24", "week": 7, "date": "2023-10-23", "g1": 170, "g2": 136, "g3": 150, "series": 456, "avg": 152.0}, {"id": "ADP_23-24-W8", "league": "ADP_23-24", "week": 8, "date": "2023-10-30", "g1": 112, "g2": 123, "g3": 145, "series": 380, "avg": 126.7}, {"id": "ADP_23-24-W9", "league": "ADP_23-24", "week": 9, "date": "2023-11-06", "g1": 141, "g2": 140, "g3": 146, "series": 427, "avg": 142.3}, {"id": "ADP_23-24-W10", "league": "ADP_23-24", "week": 10, "date": "2023-11-13", "g1": 179, "g2": 155, "g3": 135, "series": 469, "avg": 156.3}, {"id": "ADP_23-24-W11", "league": "ADP_23-24", "week": 11, "date": "2023-11-20", "g1": 152, "g2": 179, "g3": 152, "series": 483, "avg": 161.0}, {"id": "ADP_23-24-W12", "league": "ADP_23-24", "week": 12, "date": "2023-11-27", "g1": 213, "g2": 187, "g3": 168, "series": 568, "avg": 189.3}, {"id": "ADP_23-24-W13", "league": "ADP_23-24", "week": 13, "date": "2023-12-04", "g1": 133, "g2": 157, "g3": 203, "series": 493, "avg": 164.3}, {"id": "ADP_23-24-W14", "league": "ADP_23-24", "week": 14, "date": "2023-12-11", "g1": 173, "g2": 202, "g3": 188, "series": 563, "avg": 187.7}, {"id": "ADP_23-24-W15", "league": "ADP_23-24", "week": 15, "date": "2023-12-18", "g1": 148, "g2": 192, "g3": 178, "series": 518, "avg": 172.7}, {"id": "ADP_23-24-W18", "league": "ADP_23-24", "week": 18, "date": "2024-01-08", "g1": 188, "g2": 175, "g3": 140, "series": 503, "avg": 167.7}, {"id": "ADP_23-24-W19", "league": "ADP_23-24", "week": 19, "date": "2024-01-15", "g1": 198, "g2": 191, "g3": 205, "series": 594, "avg": 198.0}, {"id": "ADP_23-24-W20", "league": "ADP_23-24", "week": 20, "date": "2024-01-22", "g1": 163, "g2": 188, "g3": 187, "series": 538, "avg": 179.3}, {"id": "ADP_23-24-W21", "league": "ADP_23-24", "week": 21, "date": "2024-01-29", "g1": 167, "g2": 190, "g3": 138, "series": 495, "avg": 165.0}, {"id": "ADP_23-24-W22", "league": "ADP_23-24", "week": 22, "date": "2024-02-05", "g1": 171, "g2": 215, "g3": 208, "series": 594, "avg": 198.0}, {"id": "ADP_23-24-W23", "league": "ADP_23-24", "week": 23, "date": "2024-02-12", "g1": 181, "g2": 145, "g3": 218, "series": 544, "avg": 181.3}, {"id": "ADP_23-24-W24", "league": "ADP_23-24", "week": 24, "date": "2024-02-19", "g1": 204, "g2": 158, "g3": 238, "series": 600, "avg": 200.0}, {"id": "ADP_23-24-W25", "league": "ADP_23-24", "week": 25, "date": "2024-02-26", "g1": 173, "g2": 162, "g3": 193, "series": 528, "avg": 176.0}, {"id": "ADP_23-24-W26", "league": "ADP_23-24", "week": 26, "date": "2024-03-04", "g1": 174, "g2": 162, "g3": 183, "series": 519, "avg": 173.0}, {"id": "ADP_23-24-W27", "league": "ADP_23-24", "week": 27, "date": "2024-03-11", "g1": 156, "g2": 256, "g3": 174, "series": 586, "avg": 195.3}, {"id": "ADP_23-24-W28", "league": "ADP_23-24", "week": 28, "date": "2024-03-18", "g1": 158, "g2": 194, "g3": 212, "series": 564, "avg": 188.0}, {"id": "ADP_23-24-W29", "league": "ADP_23-24", "week": 29, "date": "2024-03-25", "g1": 172, "g2": 163, "g3": 184, "series": 519, "avg": 173.0}, {"id": "ADP_23-24-W30", "league": "ADP_23-24", "week": 30, "date": "2024-04-15", "g1": 169, "g2": 216, "g3": 191, "series": 576, "avg": 192.0}, {"id": "ADP_23-24-W31", "league": "ADP_23-24", "week": 31, "date": "2024-04-15", "g1": 159, "g2": 182, "g3": 157, "series": 498, "avg": 166.0}, {"id": "ADP_23-24-W32", "league": "ADP_23-24", "week": 32, "date": "2024-04-22", "g1": 158, "g2": 212, "g3": 130, "series": 500, "avg": 166.7}, {"id": "ADP_24-25-W1", "league": "ADP_24-25", "week": 1, "date": "2024-09-09", "g1": 219, "g2": 195, "g3": 222, "series": 636, "avg": 212.0}, {"id": "ADP_24-25-W2", "league": "ADP_24-25", "week": 2, "date": "2024-09-16", "g1": 156, "g2": 180, "g3": 158, "series": 494, "avg": 164.7}, {"id": "ADP_24-25-W3", "league": "ADP_24-25", "week": 3, "date": "2024-09-23", "g1": 210, "g2": 179, "g3": 124, "series": 513, "avg": 171.0}, {"id": "ADP_24-25-W4", "league": "ADP_24-25", "week": 4, "date": "2024-09-30", "g1": 200, "g2": 204, "g3": 135, "series": 539, "avg": 179.7}, {"id": "ADP_24-25-W5", "league": "ADP_24-25", "week": 5, "date": "2024-10-07", "g1": 202, "g2": 209, "g3": 190, "series": 601, "avg": 200.3}, {"id": "ADP_24-25-W6", "league": "ADP_24-25", "week": 6, "date": "2024-10-14", "g1": 209, "g2": 167, "g3": 171, "series": 547, "avg": 182.3}, {"id": "ADP_24-25-W7", "league": "ADP_24-25", "week": 7, "date": "2024-10-21", "g1": 196, "g2": 188, "g3": 214, "series": 598, "avg": 199.3}, {"id": "ADP_24-25-W8", "league": "ADP_24-25", "week": 8, "date": "2024-10-28", "g1": 204, "g2": 177, "g3": 160, "series": 541, "avg": 180.3}, {"id": "ADP_24-25-W9", "league": "ADP_24-25", "week": 9, "date": "2024-11-04", "g1": 173, "g2": 194, "g3": 220, "series": 587, "avg": 195.7}, {"id": "ADP_24-25-W10", "league": "ADP_24-25", "week": 10, "date": "2024-11-11", "g1": 205, "g2": 204, "g3": 224, "series": 633, "avg": 211.0}, {"id": "ADP_24-25-W11", "league": "ADP_24-25", "week": 11, "date": "2024-11-18", "g1": 170, "g2": 165, "g3": 157, "series": 492, "avg": 164.0}, {"id": "ADP_24-25-W12", "league": "ADP_24-25", "week": 12, "date": "2024-11-25", "g1": 237, "g2": 160, "g3": 172, "series": 569, "avg": 189.7}, {"id": "ADP_24-25-W13", "league": "ADP_24-25", "week": 13, "date": "2024-12-02", "g1": 219, "g2": 168, "g3": 169, "series": 556, "avg": 185.3}, {"id": "ADP_24-25-W14", "league": "ADP_24-25", "week": 14, "date": "2024-12-09", "g1": 215, "g2": 159, "g3": 143, "series": 517, "avg": 172.3}, {"id": "ADP_24-25-W15", "league": "ADP_24-25", "week": 15, "date": "2024-12-16", "g1": 195, "g2": 198, "g3": 230, "series": 623, "avg": 207.7}, {"id": "ADP_24-25-W18", "league": "ADP_24-25", "week": 18, "date": "2025-01-06", "g1": 211, "g2": 191, "g3": 158, "series": 560, "avg": 186.7}, {"id": "ADP_24-25-W19", "league": "ADP_24-25", "week": 19, "date": "2025-01-13", "g1": 163, "g2": 194, "g3": 190, "series": 547, "avg": 182.3}, {"id": "ADP_24-25-W20", "league": "ADP_24-25", "week": 20, "date": "2025-01-20", "g1": 198, "g2": 186, "g3": 175, "series": 559, "avg": 186.3}, {"id": "ADP_24-25-W21", "league": "ADP_24-25", "week": 21, "date": "2025-01-27", "g1": 213, "g2": 166, "g3": 169, "series": 548, "avg": 182.7}, {"id": "ADP_24-25-W22", "league": "ADP_24-25", "week": 22, "date": "2024-02-03", "g1": 246, "g2": 181, "g3": 148, "series": 575, "avg": 191.7}, {"id": "ADP_24-25-W23", "league": "ADP_24-25", "week": 23, "date": "2024-02-10", "g1": 222, "g2": 160, "g3": 162, "series": 544, "avg": 181.3}, {"id": "ADP_24-25-W24", "league": "ADP_24-25", "week": 24, "date": "2025-02-17", "g1": 205, "g2": 193, "g3": 152, "series": 550, "avg": 183.3}, {"id": "ADP_24-25-W25", "league": "ADP_24-25", "week": 25, "date": "2025-02-24", "g1": 203, "g2": 189, "g3": 180, "series": 572, "avg": 190.7}, {"id": "ADP_24-25-W26", "league": "ADP_24-25", "week": 26, "date": "2025-03-03", "g1": 187, "g2": 196, "g3": 256, "series": 639, "avg": 213.0}, {"id": "ADP_24-25-W27", "league": "ADP_24-25", "week": 27, "date": "2025-03-10", "g1": 187, "g2": 218, "g3": 205, "series": 610, "avg": 203.3}, {"id": "ADP_24-25-W28", "league": "ADP_24-25", "week": 28, "date": "2025-03-17", "g1": 171, "g2": 199, "g3": 149, "series": 519, "avg": 173.0}, {"id": "ADP_24-25-W29", "league": "ADP_24-25", "week": 29, "date": "2025-03-24", "g1": 177, "g2": 176, "g3": 167, "series": 520, "avg": 173.3}, {"id": "ADP_24-25-W30", "league": "ADP_24-25", "week": 30, "date": "2025-03-31", "g1": 149, "g2": 175, "g3": 166, "series": 490, "avg": 163.3}, {"id": "ADP_24-25-W31", "league": "ADP_24-25", "week": 31, "date": "2025-04-07", "g1": 197, "g2": 204, "g3": 225, "series": 626, "avg": 208.7}, {"id": "ADP_24-25-W32", "league": "ADP_24-25", "week": 32, "date": "2025-04-14", "g1": 159, "g2": 194, "g3": 139, "series": 492, "avg": 164.0}, {"id": "ADP_25-26-W1", "league": "ADP_25-26", "week": 1, "date": "2025-09-08", "g1": 190, "g2": 245, "g3": 209, "series": 644, "avg": 214.7}, {"id": "ADP_25-26-W2", "league": "ADP_25-26", "week": 2, "date": "2025-09-15", "g1": 214, "g2": 138, "g3": 158, "series": 510, "avg": 170.0}, {"id": "ADP_25-26-W3", "league": "ADP_25-26", "week": 3, "date": "2025-09-22", "g1": 161, "g2": 189, "g3": 190, "series": 540, "avg": 180.0}, {"id": "ADP_25-26-W4", "league": "ADP_25-26", "week": 4, "date": "2025-09-29", "g1": 187, "g2": 193, "g3": 174, "series": 554, "avg": 184.7}, {"id": "ADP_25-26-W5", "league": "ADP_25-26", "week": 5, "date": "2025-10-06", "g1": 164, "g2": 180, "g3": 157, "series": 501, "avg": 167.0}, {"id": "ADP_25-26-W6", "league": "ADP_25-26", "week": 6, "date": "2025-10-13", "g1": 189, "g2": 192, "g3": 200, "series": 581, "avg": 193.7}, {"id": "ADP_25-26-W7", "league": "ADP_25-26", "week": 7, "date": "2025-10-20", "g1": 213, "g2": 190, "g3": 179, "series": 582, "avg": 194.0}, {"id": "ADP_25-26-W8", "league": "ADP_25-26", "week": 8, "date": "2025-10-27", "g1": 193, "g2": 232, "g3": 195, "series": 620, "avg": 206.7}, {"id": "ADP_25-26-W9", "league": "ADP_25-26", "week": 9, "date": "2025-11-03", "g1": 214, "g2": 172, "g3": 179, "series": 565, "avg": 188.3}, {"id": "ADP_25-26-W10", "league": "ADP_25-26", "week": 10, "date": "2025-11-10", "g1": 174, "g2": 180, "g3": 168, "series": 522, "avg": 174.0}, {"id": "ADP_25-26-W11", "league": "ADP_25-26", "week": 11, "date": "2025-11-17", "g1": 182, "g2": 191, "g3": 213, "series": 586, "avg": 195.3}, {"id": "ADP_25-26-W13", "league": "ADP_25-26", "week": 13, "date": "2025-12-01", "g1": 216, "g2": 202, "g3": 181, "series": 599, "avg": 199.7}, {"id": "ADP_25-26-W14", "league": "ADP_25-26", "week": 14, "date": "2025-12-08", "g1": 193, "g2": 180, "g3": 171, "series": 544, "avg": 181.3}, {"id": "ADP_25-26-W15", "league": "ADP_25-26", "week": 15, "date": "2025-12-15", "g1": 192, "g2": 202, "g3": 213, "series": 607, "avg": 202.3}, {"id": "ADP_25-26-W20", "league": "ADP_25-26", "week": 20, "date": "2026-01-05", "g1": 191, "g2": 203, "g3": 212, "series": 606, "avg": 202.0}, {"id": "ADP_25-26-W21", "league": "ADP_25-26", "week": 21, "date": "2026-01-12", "g1": 169, "g2": 156, "g3": 182, "series": 507, "avg": 169.0}, {"id": "ADP_25-26-W22", "league": "ADP_25-26", "week": 22, "date": "2026-01-19", "g1": 178, "g2": 211, "g3": 201, "series": 590, "avg": 196.7}, {"id": "ADP_25-26-W23", "league": "ADP_25-26", "week": 23, "date": "2026-02-02", "g1": 211, "g2": 203, "g3": 177, "series": 591, "avg": 197.0}, {"id": "ADP_25-26-W24", "league": "ADP_25-26", "week": 24, "date": "2026-02-09", "g1": 182, "g2": 223, "g3": 179, "series": 584, "avg": 194.7}, {"id": "ADP_25-26-W26", "league": "ADP_25-26", "week": 26, "date": "2026-02-16", "g1": 189, "g2": 221, "g3": 208, "series": 618, "avg": 206.0}, {"id": "ADP_25-26-W27", "league": "ADP_25-26", "week": 27, "date": "2026-03-02", "g1": 226, "g2": 209, "g3": 224, "series": 659, "avg": 219.7}, {"id": "ADP_25-26-W28", "league": "ADP_25-26", "week": 28, "date": "2026-03-09", "g1": 210, "g2": 218, "g3": 188, "series": 616, "avg": 205.3}, {"id": "ADP_25-26-W29", "league": "ADP_25-26", "week": 29, "date": "2026-03-16", "g1": 158, "g2": 212, "g3": 192, "series": 562, "avg": 187.3}, {"id": "ADP_25-26-W30", "league": "ADP_25-26", "week": 30, "date": "2026-03-23", "g1": 134, "g2": 201, "g3": 235, "series": 570, "avg": 190.0}, {"id": "ADP_25-26-W31", "league": "ADP_25-26", "week": 31, "date": "2026-03-30", "g1": 226, "g2": 160, "g3": 202, "series": 588, "avg": 196.0}, {"id": "ADP_25-26-W32", "league": "ADP_25-26", "week": 32, "date": "2026-04-06", "g1": 204, "g2": 211, "g3": 149, "series": 564, "avg": 188.0}, {"id": "ADP_25-26-W33", "league": "ADP_25-26", "week": 33, "date": "2026-04-13", "g1": 180, "g2": 176, "g3": 219, "series": 575, "avg": 191.7}, {"id": "ADP_25-26-W34", "league": "ADP_25-26", "week": 34, "date": "2026-04-20", "g1": 201, "g2": 168, "g3": 211, "series": 580, "avg": 193.3}, {"id": "ADP_25-26-W35", "league": "ADP_25-26", "week": 35, "date": "2026-04-27", "g1": 178, "g2": 176, "g3": 173, "series": 527, "avg": 175.7}, {"id": "ADP_26-27-W1", "league": "ADP_26-27", "week": 1, "date": "2026-09-14", "g1": 236, "g2": 181, "g3": 143, "series": 560, "avg": 186.7}, {"id": "ADP_26-27-W2", "league": "ADP_26-27", "week": 2, "date": "2026-09-21", "g1": 156, "g2": 169, "g3": 148, "series": 473, "avg": 157.7}, {"id": "ADP_26-27-W3", "league": "ADP_26-27", "week": 3, "date": "2026-09-28", "g1": 192, "g2": 176, "g3": 193, "series": 561, "avg": 187.0}, {"id": "ADP_26-27-W4", "league": "ADP_26-27", "week": 4, "date": "2026-10-05", "g1": 196, "g2": 192, "g3": 233, "series": 621, "avg": 207.0}, {"id": "ADP_26-27-W5", "league": "ADP_26-27", "week": 5, "date": "2026-10-12", "g1": 161, "g2": 197, "g3": 151, "series": 509, "avg": 169.7}, {"id": "ADP_26-27-W7", "league": "ADP_26-27", "week": 7, "date": "2026-10-26", "g1": 139, "g2": 232, "g3": 203, "series": 574, "avg": 191.3}, {"id": "ADP_26-27-W8", "league": "ADP_26-27", "week": 8, "date": "2026-11-02", "g1": 246, "g2": 117, "g3": 215, "series": 578, "avg": 192.7}, {"id": "Summer_Mixed_Fun_24-W1", "league": "Summer_Mixed_Fun_24", "week": 1, "date": "2024-05-30", "g1": 172, "g2": 157, "g3": 172, "series": 501, "avg": 167.0}, {"id": "Summer_Mixed_Fun_24-W2", "league": "Summer_Mixed_Fun_24", "week": 2, "date": "2024-06-06", "g1": 232, "g2": 191, "g3": 179, "series": 602, "avg": 200.7}, {"id": "Summer_Mixed_Fun_24-W3", "league": "Summer_Mixed_Fun_24", "week": 3, "date": "2024-06-13", "g1": 210, "g2": 163, "g3": 154, "series": 527, "avg": 175.7}, {"id": "Summer_Mixed_Fun_24-W4", "league": "Summer_Mixed_Fun_24", "week": 4, "date": "2024-06-20", "g1": 216, "g2": 168, "g3": 154, "series": 538, "avg": 179.3}, {"id": "Summer_Mixed_Fun_24-W5", "league": "Summer_Mixed_Fun_24", "week": 5, "date": "2024-06-27", "g1": 193, "g2": 203, "g3": 126, "series": 522, "avg": 174.0}, {"id": "Summer_Mixed_Fun_24-W6", "league": "Summer_Mixed_Fun_24", "week": 6, "date": "2024-07-11", "g1": 212, "g2": 209, "g3": 162, "series": 583, "avg": 194.3}, {"id": "Summer_Mixed_Fun_24-W7", "league": "Summer_Mixed_Fun_24", "week": 7, "date": "2024-07-18", "g1": 212, "g2": 171, "g3": 172, "series": 555, "avg": 185.0}, {"id": "Summer_Mixed_Fun_24-W8", "league": "Summer_Mixed_Fun_24", "week": 8, "date": "2024-07-25", "g1": 169, "g2": 190, "g3": 192, "series": 551, "avg": 183.7}, {"id": "Summer_Mixed_Fun_24-W9", "league": "Summer_Mixed_Fun_24", "week": 9, "date": "2024-08-01", "g1": 224, "g2": 168, "g3": 174, "series": 566, "avg": 188.7}, {"id": "Summer_Mixed_Fun_24-W10", "league": "Summer_Mixed_Fun_24", "week": 10, "date": "2024-08-08", "g1": 170, "g2": 163, "g3": 148, "series": 481, "avg": 160.3}, {"id": "Summer_Mixed_Fun_24-W11", "league": "Summer_Mixed_Fun_24", "week": 11, "date": "2024-08-15", "g1": 178, "g2": 168, "g3": 201, "series": 547, "avg": 182.3}, {"id": "Summer_Mixed_Fun_24-W12", "league": "Summer_Mixed_Fun_24", "week": 12, "date": "2024-08-22", "g1": 141, "g2": 188, "g3": 174, "series": 503, "avg": 167.7}, {"id": "Summer_Mixed_Fun_24-W13", "league": "Summer_Mixed_Fun_24", "week": 13, "date": "2024-08-29", "g1": 213, "g2": 192, "g3": 182, "series": 587, "avg": 195.7}, {"id": "Summer_Mixed_Fun_25-W1", "league": "Summer_Mixed_Fun_25", "week": 1, "date": "2025-06-05", "g1": 157, "g2": 192, "g3": 128, "series": 477, "avg": 159.0}, {"id": "Summer_Mixed_Fun_25-W2", "league": "Summer_Mixed_Fun_25", "week": 2, "date": "2025-06-12", "g1": 186, "g2": 149, "g3": 188, "series": 523, "avg": 174.3}, {"id": "Summer_Mixed_Fun_25-W3", "league": "Summer_Mixed_Fun_25", "week": 3, "date": "2025-06-19", "g1": 137, "g2": 227, "g3": 177, "series": 541, "avg": 180.3}, {"id": "Summer_Mixed_Fun_25-W4", "league": "Summer_Mixed_Fun_25", "week": 4, "date": "2025-06-26", "g1": 161, "g2": 161, "g3": 200, "series": 522, "avg": 174.0}, {"id": "Summer_Mixed_Fun_25-W5", "league": "Summer_Mixed_Fun_25", "week": 5, "date": "2025-07-03", "g1": 153, "g2": 151, "g3": 190, "series": 494, "avg": 164.7}, {"id": "Summer_Mixed_Fun_25-W6", "league": "Summer_Mixed_Fun_25", "week": 6, "date": "2025-07-10", "g1": 163, "g2": 221, "g3": 190, "series": 574, "avg": 191.3}, {"id": "Summer_Mixed_Fun_25-W7", "league": "Summer_Mixed_Fun_25", "week": 7, "date": "2025-07-17", "g1": 218, "g2": 189, "g3": 147, "series": 554, "avg": 184.7}, {"id": "Summer_Mixed_Fun_25-W8", "league": "Summer_Mixed_Fun_25", "week": 8, "date": "2025-07-31", "g1": 193, "g2": 206, "g3": 161, "series": 560, "avg": 186.7}, {"id": "Summer_Mixed_Fun_25-W9", "league": "Summer_Mixed_Fun_25", "week": 9, "date": "2025-08-07", "g1": 187, "g2": 196, "g3": 184, "series": 567, "avg": 189.0}, {"id": "Summer_Mixed_Fun_25-W10", "league": "Summer_Mixed_Fun_25", "week": 10, "date": "2025-08-14", "g1": 197, "g2": 205, "g3": 153, "series": 555, "avg": 185.0}, {"id": "Summer_Mixed_Fun_25-W11", "league": "Summer_Mixed_Fun_25", "week": 11, "date": "2025-08-21", "g1": 166, "g2": 207, "g3": 156, "series": 529, "avg": 176.3}, {"id": "Summer_Mixed_Fun_25-W12", "league": "Summer_Mixed_Fun_25", "week": 12, "date": "2025-08-28", "g1": 181, "g2": 142, "g3": 183, "series": 506, "avg": 168.7}];
 
-<!-- Visual Charts & AI Tactical Coach -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  
-  <!-- Scoring Timeline Chart -->
-  <section class="lg:col-span-2 glass-card p-5 border-slate-700 space-y-4">
-    <div class="flex items-center justify-between">
-      <div>
-        <h2 class="text-base font-bold text-white">Series Progression & Rolling 3-Wk Form</h2>
-        <p class="text-xs text-slate-400">Green line is Scratch Series; cyan dashed is 3-week rolling average</p>
-      </div>
-      <span class="text-xs font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">600 Target</span>
-    </div>
-    <div class="w-full overflow-x-auto">
-      <svg id="seriesChart" class="w-full h-56" viewBox="0 0 700 220" preserveAspectRatio="none"></svg>
-    </div>
-  </section>
+    const LEAGUES = [
+      { id: 'all', label: 'All Seasons (Combined)' },
+      { id: 'ADP_26-27', label: 'ADP 26-27 (Current)' },
+      { id: 'ADP_25-26', label: 'ADP 25-26' },
+      { id: 'ADP_24-25', label: 'ADP 24-25' },
+      { id: 'ADP_23-24', label: 'ADP 23-24' },
+      { id: 'Summer_Mixed_Fun_25', label: 'Summer Fun 25' },
+      { id: 'Summer_Mixed_Fun_24', label: 'Summer Fun 24' }
+    ];
 
-  <!-- AI Tactical Transition Engine -->
-  <section class="glass-card p-5 border-slate-700 space-y-4">
-    <div class="flex items-center gap-2">
-      <span class="text-xl">⚡</span>
-      <div>
-        <h2 class="text-base font-bold text-white">Transition & Friction Coach</h2>
-        <p class="text-xs text-slate-400">Arsenal timing & physical adjustments</p>
-      </div>
-    </div>
-    <div id="coachInsights" class="space-y-3 text-xs leading-relaxed">
-      <!-- Populated dynamically -->
-    </div>
-  </section>
-</div>
+    let matches = [];
+    let activeLeague = 'all';
+    let activeTimeWindow = 'all';
 
-<!-- Match History Table -->
-<section class="glass-card p-5 border-slate-700 space-y-3 shadow-md">
-  <div class="flex items-center justify-between">
-    <div>
-      <h2 class="text-base font-bold text-white">Match History Log</h2>
-      <p class="text-[11px] text-slate-400">Historical matches, equipment transitions & lane environment tags</p>
-    </div>
-    <span id="matchLogCount" class="text-xs text-slate-400 font-mono"></span>
-  </div>
-  <div class="overflow-x-auto max-h-96 custom-scrollbar">
-    <table class="w-full text-left text-xs border-collapse">
-      <thead>
-        <tr class="border-b border-slate-700/80 text-slate-400 uppercase text-[10px] tracking-wider sticky top-0 bg-slate-900/95 backdrop-blur z-10">
-          <th class="py-2.5 px-3">Date</th>
-          <th class="py-2.5 px-3">League</th>
-          <th class="py-2.5 px-3 text-center">Wk</th>
-          <th class="py-2.5 px-3 text-center">G1</th>
-          <th class="py-2.5 px-3 text-center">G2</th>
-          <th class="py-2.5 px-3 text-center">G3</th>
-          <th class="py-2.5 px-3 text-right">Series</th>
-          <th class="py-2.5 px-3 text-right">Avg</th>
-          <th class="py-2.5 px-3">Arsenal & Switch</th>
-          <th class="py-2.5 px-3">Lane Environment</th>
-          <th class="py-2.5 px-2 text-center">Del</th>
+    function init() {
+      const stored = localStorage.getItem('striketrack_matches_v3');
+      if (stored) {
+        try {
+          matches = JSON.parse(stored);
+        } catch(e) {
+          matches = [...RAW_BASELINE];
+        }
+      } else {
+        matches = [...RAW_BASELINE];
+      }
+
+      renderLeagueTabs();
+      renderApp();
+      document.getElementById('inputDate').value = new Date().toISOString().split('T')[0];
+    }
+
+    function renderLeagueTabs() {
+      const container = document.getElementById('leagueTabs');
+      container.innerHTML = LEAGUES.map(l => `
+        <button onclick="setLeague('${l.id}')" class="league-pill px-3 py-1.5 rounded-lg text-xs font-semibold transition ${activeLeague === l.id ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900' : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700/80'}">
+          ${l.label}
+        </button>
+      `).join('');
+      const curL = LEAGUES.find(x => x.id === activeLeague);
+      document.getElementById('activeLeagueBadge').textContent = curL ? curL.label : '';
+    }
+
+    function setLeague(id) {
+      activeLeague = id;
+      renderLeagueTabs();
+      renderApp();
+    }
+
+    function setTimeWindow(tw) {
+      activeTimeWindow = tw;
+      document.querySelectorAll('.time-btn').forEach(b => {
+        b.className = 'time-btn px-2.5 py-1 text-xs font-semibold rounded-md transition bg-slate-800 hover:bg-slate-700 text-slate-300';
+      });
+      const activeBtn = document.getElementById('tw-' + tw);
+      if (activeBtn) activeBtn.className = 'time-btn px-2.5 py-1 text-xs font-semibold rounded-md transition bg-indigo-600 text-white shadow-sm';
+      renderApp();
+    }
+
+    function getFilteredMatches() {
+      let list = matches;
+      if (activeLeague !== 'all') {
+        list = list.filter(m => m.league === activeLeague);
+      }
+
+      list = [...list].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      if (activeTimeWindow === 'last10') {
+        list = list.slice(0, 10);
+      } else if (activeTimeWindow === '6m') {
+        const cutoff = new Date();
+        cutoff.setMonth(cutoff.getMonth() - 6);
+        list = list.filter(m => new Date(m.date) >= cutoff);
+      } else if (activeTimeWindow === '1y') {
+        const cutoff = new Date();
+        cutoff.setFullYear(cutoff.getFullYear() - 1);
+        list = list.filter(m => new Date(m.date) >= cutoff);
+      }
+
+      return list;
+    }
+
+    function renderApp() {
+      const filtered = getFilteredMatches();
+      const count = filtered.length;
+
+      document.getElementById('matchCountLabel').textContent = `${count} wks (${count * 3} gms)`;
+      document.getElementById('matchLogCount').textContent = `${count} entries`;
+
+      if (count === 0) {
+        document.getElementById('statAvg').textContent = '--';
+        document.getElementById('statPins').textContent = '0 pins / 0 games';
+        document.getElementById('statHighGame').textContent = '--';
+        document.getElementById('stat200s').textContent = '0 200+ games';
+        document.getElementById('statHighSeries').textContent = '--';
+        document.getElementById('stat600s').textContent = '0 600+ series';
+        document.getElementById('statGameArc').textContent = '-- / -- / --';
+        document.getElementById('statArcDelta').textContent = 'No match records';
+        document.getElementById('statSpread').textContent = '±--';
+        document.getElementById('statBounceBack').textContent = 'Bounce: --';
+        document.getElementById('matchTableBody').innerHTML = '<tr><td colspan="11" class="py-6 text-center text-slate-500">No matches found for selected filters.</td></tr>';
+        renderSVGChart([]);
+        renderCoachInsights(null);
+        renderRoadTo200(null);
+        updateArsenalClock();
+        return;
+      }
+
+      // Arithmetic computations
+      let totalPins = 0;
+      let g1Sum = 0, g2Sum = 0, g3Sum = 0;
+      let maxGame = 0;
+      let maxSeries = 0;
+      let games200 = 0;
+      let series600 = 0;
+      let spreads = [];
+      let bounceBacks = [];
+
+      filtered.forEach(m => {
+        totalPins += m.series;
+        g1Sum += m.g1;
+        g2Sum += m.g2;
+        g3Sum += m.g3;
+
+        const localMaxG = Math.max(m.g1, m.g2, m.g3);
+        const localMinG = Math.min(m.g1, m.g2, m.g3);
+        spreads.push(localMaxG - localMinG);
+
+        if (localMaxG > maxGame) maxGame = localMaxG;
+        if (m.series > maxSeries) maxSeries = m.series;
+
+        if (m.g1 >= 200) games200++;
+        if (m.g2 >= 200) games200++;
+        if (m.g3 >= 200) games200++;
+        if (m.series >= 600) series600++;
+
+        // Bounce-back detection (if Game 1 or 2 was <=165, did next game jump +35?)
+        if (m.g1 <= 165 && m.g2 >= 195) bounceBacks.push(m.g2 - m.g1);
+        if (m.g2 <= 165 && m.g3 >= 195) bounceBacks.push(m.g3 - m.g2);
+      });
+
+      const totalGames = count * 3;
+      const trueAvg = (totalPins / totalGames).toFixed(2);
+      const g1Avg = (g1Sum / count).toFixed(1);
+      const g2Avg = (g2Sum / count).toFixed(1);
+      const g3Avg = (g3Sum / count).toFixed(1);
+
+      const avgSpread = (spreads.reduce((a, b) => a + b, 0) / count).toFixed(1);
+      const bounceCount = bounceBacks.length;
+
+      // DOM Updates
+      document.getElementById('statAvg').textContent = trueAvg;
+      document.getElementById('statPins').textContent = `${totalPins.toLocaleString()} pins / ${totalGames} gms`;
+      document.getElementById('statHighGame').textContent = maxGame;
+      document.getElementById('stat200s').textContent = `${games200} of ${totalGames} (${((games200/totalGames)*100).toFixed(0)}%)`;
+      document.getElementById('statHighSeries').textContent = maxSeries;
+      document.getElementById('stat600s').textContent = `${series600} of ${count} (${((series600/count)*100).toFixed(0)}%)`;
+      document.getElementById('statGameArc').textContent = `${g1Avg} / ${g2Avg} / ${g3Avg}`;
+
+      const arcDiff = (g3Avg - g1Avg).toFixed(1);
+      const deltaSign = arcDiff >= 0 ? '+' : '';
+      document.getElementById('statArcDelta').textContent = `G3 vs G1: ${deltaSign}${arcDiff} pins`;
+
+      document.getElementById('statSpread').textContent = `${avgSpread} pins`;
+      document.getElementById('statBounceBack').textContent = `${bounceCount} resilient recoveries`;
+
+      // Render Table
+      const tableBody = document.getElementById('matchTableBody');
+      tableBody.innerHTML = filtered.map(m => `
+        <tr class="hover:bg-slate-800/50 transition">
+          <td class="py-2.5 px-3 font-mono text-slate-300 whitespace-nowrap">${m.date}</td>
+          <td class="py-2.5 px-3 font-medium text-slate-300 whitespace-nowrap">${m.league}</td>
+          <td class="py-2.5 px-3 text-center font-mono text-slate-400">${m.week || '-'}</td>
+          <td class="py-2.5 px-3 text-center font-bold ${m.g1 >= 200 ? 'text-amber-400' : 'text-slate-300'}">${m.g1}</td>
+          <td class="py-2.5 px-3 text-center font-bold ${m.g2 >= 200 ? 'text-amber-400' : 'text-slate-300'}">${m.g2}</td>
+          <td class="py-2.5 px-3 text-center font-bold ${m.g3 >= 200 ? 'text-amber-400' : 'text-slate-300'}">${m.g3}</td>
+          <td class="py-2.5 px-3 text-right font-black ${m.series >= 600 ? 'text-emerald-400' : 'text-white'}">${m.series}</td>
+          <td class="py-2.5 px-3 text-right font-mono text-slate-300">${(m.series / 3).toFixed(1)}</td>
+          <td class="py-2.5 px-3 text-slate-300 whitespace-nowrap">
+            ${m.switchTiming && m.switchTiming !== 'None' ? `<span class="px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-[10px] font-mono mr-1">${m.switchTiming}</span>` : ''}
+            <span class="text-slate-400 text-[11px]">${m.startBall ? `${m.startBall} → ${m.finishBall || 'Same'}` : (m.notes ? m.notes : '-')}</span>
+          </td>
+          <td class="py-2.5 px-3 text-slate-400 whitespace-nowrap text-[11px]">
+            ${m.friction ? `<span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[10px] font-sans mr-1">${m.friction}</span>` : '-'}
+            ${m.traffic && m.traffic.includes('Cranker') ? `<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px]">High Rev</span>` : ''}
+          </td>
+          <td class="py-2.5 px-2 text-center">
+            <button onclick="deleteMatch('${m.id}')" class="text-slate-600 hover:text-rose-400 font-bold transition px-1">&times;</button>
+          </td>
         </tr>
-      </thead>
-      <tbody id="matchTableBody" class="divide-y divide-slate-800 text-slate-200">
-        <!-- Populated via JS -->
-      </tbody>
-    </table>
-  </div>
-</section>
+      `).join('');
 
+      renderSVGChart(filtered);
+      renderCoachInsights({ g1Avg, g2Avg, g3Avg, trueAvg, count, avgSpread });
+      renderRoadTo200({ trueAvg, count, totalPins, totalGames });
+      updateArsenalClock();
+    }
 
-  <form id="addMatchForm" onsubmit="handleSaveMatch(event)" class="space-y-4 text-xs">
-    <div class="grid grid-cols-2 gap-3">
-      <div>
-        <label class="block font-semibold text-slate-300 mb-1">League</label>
-        <select id="inputLeague" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-medium focus:ring-1 focus:ring-emerald-500">
-          <option value="ADP_26-27">ADP 26-27 (Current)</option>
-          <option value="Summer_Mixed_Fun_26">Summer Mixed Fun '26</option>
-          <option value="ADP_25-26">ADP 25-26</option>
-          <option value="Summer_Mixed_Fun_25">Summer Mixed Fun '25</option>
-          <option value="ADP_24-25">ADP 24-25</option>
-          <option value="Summer_Mixed_Fun_24">Summer Mixed Fun '24</option>
-          <option value="ADP_23-24">ADP 23-24</option>
-        </select>
-      </div>
-      <div>
-        <label class="block font-semibold text-slate-300 mb-1">Date</label>
-        <input type="date" id="inputDate" required class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white font-medium focus:ring-1 focus:ring-emerald-500">
-      </div>
-    </div>
+    function renderSVGChart(list) {
+      const svg = document.getElementById('seriesChart');
+      if (list.length === 0) {
+        svg.innerHTML = '<text x="350" y="110" fill="#64748b" text-anchor="middle" font-size="12">No data points</text>';
+        return;
+      }
 
-    <!-- 3-Game Scratch Inputs -->
-    <div class="grid grid-cols-3 gap-3">
-      <div>
-        <label class="block font-semibold text-slate-300 mb-1">Game 1</label>
-        <input type="number" id="inputG1" min="0" max="300" required placeholder="e.g. 195" oninput="calcSeriesPreview()" class="w-full text-center text-lg font-black bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-1 focus:ring-emerald-500">
-      </div>
-      <div>
-        <label class="block font-semibold text-slate-300 mb-1">Game 2</label>
-        <input type="number" id="inputG2" min="0" max="300" required placeholder="e.g. 180" oninput="calcSeriesPreview()" class="w-full text-center text-lg font-black bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-1 focus:ring-emerald-500">
-      </div>
-      <div>
-        <label class="block font-semibold text-slate-300 mb-1">Game 3</label>
-        <input type="number" id="inputG3" min="0" max="300" required placeholder="e.g. 210" oninput="calcSeriesPreview()" class="w-full text-center text-lg font-black bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-1 focus:ring-emerald-500">
-      </div>
-    </div>
+      const chronological = [...list].sort((a, b) => new Date(a.date) - new Date(b.date));
+      const n = chronological.length;
+      const padL = 40, padR = 20, padT = 20, padB = 30;
+      const w = 700 - padL - padR;
+      const h = 220 - padT - padB;
 
-    <div class="bg-slate-800/90 p-3 rounded-lg border border-slate-700 flex items-center justify-between text-xs font-mono">
-      <span class="text-slate-400">Night Total:</span>
-      <span class="text-emerald-400 font-bold text-sm" id="seriesPreview">Series: -- | Avg: --</span>
-    </div>
+      const seriesVals = chronological.map(d => d.series);
+      const minVal = Math.min(380, Math.min(...seriesVals));
+      const maxVal = Math.max(680, Math.max(...seriesVals) + 20);
 
-    <!-- Arsenal Transition Selectors -->
-    <div class="p-3 bg-slate-800/50 rounded-lg border border-slate-700/80 space-y-2.5">
-      <span class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider block">Arsenal Transition (Optional)</span>
-      <div class="grid grid-cols-2 gap-2.5">
-        <div>
-          <label class="block text-[11px] text-slate-400 mb-1">Starting Ball</label>
-          <select id="inputStartBall" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-white">
-            <option value="Effect Tour (Solid)">Effect Tour (Solid)</option>
-            <option value="Full Effect (Hybrid)">Full Effect (Hybrid)</option>
-            <option value="Raw Hammer / Other">Raw Hammer / Other</option>
-          </select>
+      const getX = (idx) => padL + (n > 1 ? (idx / (n - 1)) * w : w / 2);
+      const getY = (val) => padT + h - ((val - minVal) / (maxVal - minVal)) * h;
+
+      const y600 = getY(600);
+      const points = chronological.map((d, i) => `${getX(i)},${getY(d.series)}`).join(' ');
+
+      let rollingPts = [];
+      for (let i = 0; i < n; i++) {
+        const start = Math.max(0, i - 2);
+        const windowSlice = chronological.slice(start, i + 1);
+        const rAvg = windowSlice.reduce((acc, cur) => acc + cur.series, 0) / windowSlice.length;
+        rollingPts.push(`${getX(i)},${getY(rAvg)}`);
+      }
+
+      svg.innerHTML = `
+        <line x1="${padL}" y1="${getY(500)}" x2="${700-padR}" y2="${getY(500)}" stroke="#334155" stroke-dasharray="2,2" stroke-width="1"/>
+        <line x1="${padL}" y1="${y600}" x2="${700-padR}" y2="${y600}" stroke="#059669" stroke-dasharray="3,3" stroke-width="1.2"/>
+        <line x1="${padL}" y1="${getY(650)}" x2="${700-padR}" y2="${getY(650)}" stroke="#334155" stroke-dasharray="2,2" stroke-width="1"/>
+        
+        <text x="${padL - 6}" y="${getY(500) + 4}" fill="#64748b" text-anchor="end" font-size="10" font-family="monospace">500</text>
+        <text x="${padL - 6}" y="${y600 + 4}" fill="#10b981" text-anchor="end" font-size="10" font-family="monospace">600</text>
+        <text x="${padL - 6}" y="${getY(650) + 4}" fill="#64748b" text-anchor="end" font-size="10" font-family="monospace">650</text>
+
+        <polyline fill="none" stroke="#10b981" stroke-width="2.5" points="${points}" />
+        <polyline fill="none" stroke="#38bdf8" stroke-dasharray="4,4" stroke-width="2" points="${rollingPts.join(' ')}" />
+
+        ${chronological.map((d, i) => `
+          <circle cx="${getX(i)}" cy="${getY(d.series)}" r="3" fill="#10b981" stroke="#064e3b" stroke-width="1">
+            <title>${d.date} (${d.league} Wk ${d.week || '-'}): ${d.series}</title>
+          </circle>
+        `).join('')}
+      `;
+    }
+
+    function renderCoachInsights(stats) {
+      const container = document.getElementById('coachInsights');
+      if (!stats) {
+        container.innerHTML = '<p class="text-slate-500">Log scores to activate advice.</p>';
+        return;
+      }
+
+      const { g1Avg, g2Avg, g3Avg, trueAvg, count, avgSpread } = stats;
+      const g2Drop = (g1Avg - g2Avg).toFixed(1);
+      const g3Drop = (g1Avg - g3Avg).toFixed(1);
+
+      let adviceHtml = '';
+
+      if (g2Drop >= 7 || g3Drop >= 7) {
+        adviceHtml += `
+          <div class="p-3 rounded-lg bg-amber-950/40 border border-amber-800/60 text-amber-200">
+            <strong class="font-bold text-amber-300 block mb-1">⚡ Lane Transition Falloff (-${Math.max(g2Drop, g3Drop)} pins)</strong>
+            Your scoring slips from <span class="font-mono text-white">${g1Avg}</span> in Game 1 down to <span class="font-mono text-white">${g2Avg} / ${g3Avg}</span>. As head oil burns and friction shifts inside, your solid <em>Hammer Effect Tour</em> burns up too early. Switch to your cleaner <em>Full Effect (Hybrid)</em> by <strong>Game 2 Frame 6</strong>, or slide 2-3 boards left to project through the oil slick.
+          </div>
+        `;
+      } else {
+        adviceHtml += `
+          <div class="p-3 rounded-lg bg-emerald-950/40 border border-emerald-800/60 text-emerald-200">
+            <strong class="font-bold text-emerald-300 block mb-1">✅ Sustained Carry Arc</strong>
+            Your game arc (<span class="font-mono text-white">${g1Avg} → ${g2Avg} → ${g3Avg}</span>) reflects effective angle adjustments. Continue trusting your plastic spare routine on the 10-pin.
+          </div>
+        `;
+      }
+
+      if (parseFloat(avgSpread) >= 50) {
+        adviceHtml += `
+          <div class="p-3 rounded-lg bg-purple-950/40 border border-purple-800/60 text-purple-200">
+            <strong class="font-bold text-purple-300 block mb-1">🎯 Spread Volatility (${avgSpread} Pin Delta)</strong>
+            A wide game-to-game spread (like your 246 vs 117 night) indicates opening frames with missed single pins before identifying the fresh line. When a game turns tough, lock into <em>pocket-safety speed</em> and prioritize clean 180s.
+          </div>
+        `;
+      }
+
+      adviceHtml += `
+        <div class="p-3 rounded-lg bg-slate-800/80 border border-slate-700 text-slate-300">
+          <strong class="font-bold text-slate-100 block mb-1">💡 Equipment Pairing Rule</strong>
+          Start with the <strong>Effect Tour (Solid)</strong> to establish the midlane footprint. If you see the ball start checking up before the 40-foot breakpoint or flat 10-pins appear, execute an immediate ball switch to the <strong>Full Effect</strong>.
         </div>
-        <div>
-          <label class="block text-[11px] text-slate-400 mb-1">Finishing Ball</label>
-          <select id="inputFinishBall" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-white">
-            <option value="Full Effect (Hybrid)">Full Effect (Hybrid)</option>
-            <option value="Effect Tour (Solid)">Effect Tour (Solid)</option>
-            <option value="Same (No Switch)">Same (No Switch)</option>
-            <option value="Raw Hammer / Other">Raw Hammer / Other</option>
-          </select>
+      `;
+
+      container.innerHTML = adviceHtml;
+    }
+
+    function renderRoadTo200(stats) {
+      if (!stats) return;
+      const curAvg = parseFloat(stats.trueAvg);
+      const deficit = (200.0 - curAvg).toFixed(2);
+      const sign = deficit > 0 ? `-${deficit} pins/gm` : `+${Math.abs(deficit)} ahead`;
+
+      document.getElementById('pinDeficitBadge').textContent = sign;
+      document.getElementById('calcCurrentSeries').textContent = `${(curAvg * 3).toFixed(0)} series`;
+
+      // Next 3-week target series to pull average up towards 190 and 200
+      // formula: target total pins needed
+      const gamesSoFar = stats.totalGames;
+      const pinsSoFar = stats.totalPins;
+      const nextGames = 9; // 3 weeks
+      
+      const target190 = Math.max(0, Math.round(((gamesSoFar + nextGames) * 190 - pinsSoFar) / 3));
+      const target200 = Math.max(0, Math.round(((gamesSoFar + nextGames) * 200 - pinsSoFar) / 3));
+
+      document.getElementById('calc190Target').textContent = target190 > 750 ? '750+ (Max)' : `${target190} / wk`;
+      document.getElementById('calc200Target').textContent = target200 > 780 ? '780+ (Max)' : `${target200} / wk`;
+
+      document.getElementById('roadTo200Text').innerHTML = `
+        To bridge the <span class="text-white font-bold font-mono">${deficit}</span> pins/game gap to a 200 average, focus on eliminating <strong>1 missed single-pin per game</strong> (converting a 9-count open into a spare nets +10 to +11 pins). A consistent 600 series weekly baseline puts you directly on pace.
+      `;
+    }
+
+    function updateArsenalClock() {
+      // Fresh start for 2026-27 season (balls were brand new beginning of ADP 26-27)
+      const currentSeasonMatches = matches.filter(m => m.league === 'ADP_26-27' || new Date(m.date) >= new Date('2026-09-01'));
+      const storedArsenal = JSON.parse(localStorage.getItem('striketrack_arsenal_clock') || '{"tourOffset": 0, "fullOffset": 0}');
+      
+      // Weekly breakdown: 1.67 games on Effect Tour (G1 + 2/3 of G2); 1.33 games on Full Effect (last 1/3 of G2 + G3)
+      const tourGames = Math.max(0, Math.round(currentSeasonMatches.length * 1.67) - storedArsenal.tourOffset);
+      const fullGames = Math.max(0, Math.round(currentSeasonMatches.length * 1.33) - storedArsenal.fullOffset);
+
+      document.getElementById('tourGamesBadge').textContent = `${tourGames} gms on surface`;
+      document.getElementById('fullGamesBadge').textContent = `${fullGames} gms on surface`;
+
+      // Surface threshold: 30 games. Detox threshold: 60 games.
+      const tourPct = Math.min(100, Math.round((tourGames % 30) / 30 * 100));
+      const fullPct = Math.min(100, Math.round((fullGames % 30) / 30 * 100));
+
+      document.getElementById('tourProgressBar').style.width = tourPct + '%';
+      document.getElementById('fullProgressBar').style.width = fullPct + '%';
+
+      const tourRemain = 30 - (tourGames % 30);
+      const fullRemain = 30 - (fullGames % 30);
+
+      document.getElementById('tourSurfaceStatus').textContent = `Surface Scuff: ${tourRemain} gms left`;
+      document.getElementById('tourDetoxStatus').textContent = `Detox: ${60 - (tourGames % 60)} gms left`;
+
+      document.getElementById('fullSurfaceStatus').textContent = `Surface Scuff: ${fullRemain} gms left`;
+      document.getElementById('fullDetoxStatus').textContent = `Detox: ${60 - (fullGames % 60)} gms left`;
+    }
+
+    function resetArsenalCounters() {
+      if (confirm('Reset the ball maintenance counters (e.g., after scuffing or detoxing your Hammer arsenal)?')) {
+        localStorage.setItem('striketrack_arsenal_clock', JSON.stringify({
+          tourOffset: matches.length * 2,
+          fullOffset: matches.length * 1
+        }));
+        updateArsenalClock();
+      }
+    }
+
+    // Modal Handlers
+    function openModal() { document.getElementById('logModal').classList.remove('hidden'); }
+    function closeModal() { document.getElementById('logModal').classList.add('hidden'); }
+
+    function calcSeriesPreview() {
+      const g1 = parseInt(document.getElementById('inputG1').value) || 0;
+      const g2 = parseInt(document.getElementById('inputG2').value) || 0;
+      const g3 = parseInt(document.getElementById('inputG3').value) || 0;
+      const total = g1 + g2 + g3;
+      const avg = total > 0 ? (total / 3).toFixed(1) : '--';
+      document.getElementById('seriesPreview').textContent = `Series: ${total} | Avg: ${avg}`;
+    }
+
+    function handleSaveMatch(e) {
+      e.preventDefault();
+      const league = document.getElementById('inputLeague').value;
+      const date = document.getElementById('inputDate').value;
+      const g1 = parseInt(document.getElementById('inputG1').value);
+      const g2 = parseInt(document.getElementById('inputG2').value);
+      const g3 = parseInt(document.getElementById('inputG3').value);
+
+      const startBall = document.getElementById('inputStartBall').value;
+      const finishBall = document.getElementById('inputFinishBall').value;
+      const switchTiming = document.getElementById('inputSwitchTiming').value;
+      const friction = document.getElementById('inputFriction').value;
+      const traffic = document.getElementById('inputTraffic').value;
+      const notes = document.getElementById('inputNotes').value.trim();
+
+      const series = g1 + g2 + g3;
+      const newMatch = {
+        id: `${league}-${date}-${Date.now()}`,
+        league,
+        date,
+        g1,
+        g2,
+        g3,
+        series,
+        avg: Math.round(series / 3.0),
+        startBall,
+        finishBall,
+        switchTiming,
+        friction,
+        traffic,
+        notes
+      };
+
+      // Calculate previous league average for debrief
+      const prevLeagueMatches = matches.filter(m => m.league === league);
+      const prevPins = prevLeagueMatches.reduce((a, c) => a + c.series, 0);
+      const prevGames = prevLeagueMatches.length * 3;
+      const prevSeasonAvg = prevGames > 0 ? (prevPins / prevGames) : (series / 3);
+
+      matches.unshift(newMatch);
+      localStorage.setItem('striketrack_matches_v3', JSON.stringify(matches));
+      closeModal();
+      document.getElementById('addMatchForm').reset();
+      document.getElementById('inputDate').value = new Date().toISOString().split('T')[0];
+      calcSeriesPreview();
+      renderApp();
+
+      // Calculate new league average
+      const newLeagueMatches = matches.filter(m => m.league === league);
+      const newPins = newLeagueMatches.reduce((a, c) => a + c.series, 0);
+      const newGames = newLeagueMatches.length * 3;
+      const newSeasonAvg = newPins / newGames;
+
+      // Trigger Instant Post-Round Tactical Debrief Modal
+      openDebriefModal(newMatch, prevSeasonAvg, newSeasonAvg);
+      pushMatchToCloud(newMatch);
+    }
+
+    function deleteMatch(id) {
+      if (confirm('Delete this match record?')) {
+        matches = matches.filter(m => m.id !== id);
+        localStorage.setItem('striketrack_matches_v3', JSON.stringify(matches));
+        renderApp();
+      }
+    }
+
+    function resetData() {
+      if (confirm('Reset all scores back to your spreadsheet baseline? Newly entered local matches will be replaced.')) {
+        matches = [...RAW_BASELINE];
+        localStorage.setItem('striketrack_matches_v3', JSON.stringify(matches));
+        localStorage.removeItem('striketrack_arsenal_clock');
+        renderApp();
+      }
+    }
+
+    function exportCSV() {
+      let csv = 'League,Date,Game1,Game2,Game3,Series,Average,StartBall,FinishBall,SwitchTiming,Friction,Traffic,Notes\n';
+      matches.forEach(m => {
+        csv += `"${m.league}","${m.date}",${m.g1},${m.g2},${m.g3},${m.series},${(m.series/3).toFixed(2)},"${m.startBall||''}","${m.finishBall||''}","${m.switchTiming||''}","${m.friction||''}","${m.traffic||''}","${(m.notes||'').replace(/"/g, '""')}"\n`;
+      });
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'bowling_history_export_v2.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportJSON() {
+      const blob = new Blob([JSON.stringify(matches, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'bowling_history_backup_v2.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    
+    function openDebriefModal(match, prevSeasonAvg, newSeasonAvg) {
+      document.getElementById('debriefSubtitle').textContent = `${match.league} • ${match.date}`;
+      document.getElementById('debriefSeries').textContent = match.series;
+      document.getElementById('debriefAvg').textContent = `(${(match.series / 3).toFixed(1)} avg)`;
+      document.getElementById('debriefArc').textContent = `${match.g1} / ${match.g2} / ${match.g3}`;
+
+      const deltaG3G1 = match.g3 - match.g1;
+      const arcDeltaSign = deltaG3G1 >= 0 ? '+' : '';
+      document.getElementById('debriefArcDelta').textContent = `G3-G1: ${arcDeltaSign}${deltaG3G1}`;
+
+      const matchAvg = match.series / 3;
+      const vsAvg = (matchAvg - prevSeasonAvg).toFixed(1);
+      const vsSign = vsAvg >= 0 ? '+' : '';
+      const deltaEl = document.getElementById('debriefDelta');
+      deltaEl.textContent = `${vsSign}${vsAvg}`;
+      deltaEl.className = vsAvg >= 0 ? 'text-xl font-black mt-0.5 block text-emerald-400' : 'text-xl font-black mt-0.5 block text-rose-400';
+      document.getElementById('debriefNewAvg').textContent = `New Avg: ${newSeasonAvg.toFixed(2)}`;
+
+      // Diagnosis Logic
+      const gMax = Math.max(match.g1, match.g2, match.g3);
+      const gMin = Math.min(match.g1, match.g2, match.g3);
+      const spread = gMax - gMin;
+
+      let insights = [];
+
+      // 1. Transition & Equipment Evaluation
+      const droppedInG2 = match.g1 - match.g2 >= 20;
+      const droppedInG3 = match.g2 - match.g3 >= 20 || match.g1 - match.g3 >= 25;
+      const strongFinish = match.g3 >= 200 && match.g3 > match.g1;
+
+      if (droppedInG2) {
+        if (match.finishBall && match.finishBall.includes('Same') && match.startBall && match.startBall.includes('Solid')) {
+          insights.push({
+            type: 'alert',
+            title: '⚠️ Early Midlane Burn / Cover Saturation',
+            text: `Game 2 cratered by ${match.g1 - match.g2} pins while staying in your solid ${match.startBall}. When front oil depletes, the solid cover checks up too early and deflects through the pins (leaving flat 10s or 2-8-10 washouts). Next time, execute your switch to the Full Effect (Hybrid) before frame 6 of Game 2.`
+          });
+        } else if (match.switchTiming && match.switchTiming.includes('Mid Game 2')) {
+          insights.push({
+            type: 'info',
+            title: '🔄 Transition Mid-Game 2 Handled',
+            text: `You recognized the friction change and switched balls mid-Game 2. Check if the switch immediately restored your pocket entry angle in Game 3 (${match.g3}).`
+          });
+        } else {
+          insights.push({
+            type: 'alert',
+            title: '⚠️ Game 2 Transition Dip',
+            text: `Scoring fell from ${match.g1} in Game 1 to ${match.g2} in Game 2. This is the classic house shot transition window where track friction builds. Step 2-3 boards left into the oil slick to preserve slide and back-end drive.`
+          });
+        }
+      } else if (droppedInG3) {
+        insights.push({
+          type: 'alert',
+          title: '⚠️ Late-Block Friction Trap (Game 3 Drop)',
+          text: `Game 3 (${match.g3}) dropped well below your opening pace. By Game 3, carrydown and burnt track zones require opening up your angles with a cleaner cover like the Full Effect rather than trying to force the solid straight through the friction.`
+        });
+      } else if (strongFinish) {
+        insights.push({
+          type: 'success',
+          title: '🔥 Elite Back-End Adjustment',
+          text: `Outstanding Game 3 surge (${match.g3}). You successfully migrated inside or timed your ball switch as the lanes broke down, finishing the night with your best carry of the set.`
+        });
+      }
+
+      // 2. Volatility / Spread Check
+      if (spread >= 45) {
+        insights.push({
+          type: 'warning',
+          title: `🎯 High Variance Night (${spread}-Pin Spread: ${gMax} vs ${gMin})`,
+          text: `A spread over 45 pins indicates your high games have great strike carry, but the low game suffered from open frames or spare conversion lapses. On nights with erratic ball reaction, switch exclusively to plastic on single pins and lock in a 175-180 floor to protect your 600 series.`
+        });
+      } else if (spread <= 25) {
+        insights.push({
+          type: 'success',
+          title: `🎯 Rock-Solid Consistency (Tight ${spread}-Pin Spread)`,
+          text: `Exceptional frame-to-frame stability across all 3 games. A tight spread minimizes pin bleeding and keeps your series floor high.`
+        });
+      }
+
+      // 3. Lane Environment Note
+      if (match.friction && match.friction.includes('Burnt')) {
+        insights.push({
+          type: 'info',
+          title: '📌 Lane Condition Context: Early Hook',
+          text: `Logged with 'Burnt Heads / Early Hook'. When you see this pattern tag, bump your launch speed slightly (approx +0.5 mph) and project your target out toward the 10-12 board to let the ball push past the heads before hooking.`
+        });
+      }
+
+      // 4. Actionable Prescriptive Cue
+      let nextCue = '';
+      if (match.series >= 600) {
+        nextCue = `**Series Benchmark Met (600+)**: Carry this momentum into next week. Replicate your starting alignment (feet 18–20, target 11–13 arrows with Effect Tour) and maintain your rhythmic 4/5-step tempo.`;
+      } else if (matchAvg < prevSeasonAvg) {
+        nextCue = `**Reset for Next Week**: You finished ${Math.abs(vsAvg)} pins/game below your season average. Next session, prioritize clean spare pickups in games 1 and 2—covering two extra single-pins turns a 540 into a 580+ set.`;
+      } else {
+        nextCue = `**Positive Pacing**: Added pins to your season average. Keep monitoring your ball reaction at the end of Game 1 to anticipate your Game 2 move before trouble strikes.`;
+      }
+
+      insights.push({
+        type: 'action',
+        title: '📋 Tactical Focus For Next League Night',
+        text: nextCue
+      });
+
+      // Render insights into HTML
+      const container = document.getElementById('debriefDiagnosis');
+      container.innerHTML = insights.map(item => {
+        let borderClass = 'border-slate-700 bg-slate-800/70 text-slate-300';
+        let titleClass = 'text-white';
+        if (item.type === 'alert' || item.type === 'warning') {
+          borderClass = 'border-amber-800/60 bg-amber-950/30 text-amber-200';
+          titleClass = 'text-amber-300';
+        } else if (item.type === 'success') {
+          borderClass = 'border-emerald-800/60 bg-emerald-950/30 text-emerald-200';
+          titleClass = 'text-emerald-300';
+        } else if (item.type === 'action') {
+          borderClass = 'border-indigo-800/60 bg-indigo-950/30 text-indigo-200';
+          titleClass = 'text-indigo-300';
+        }
+
+        return `
+          <div class="p-3 rounded-xl border ${borderClass} space-y-1">
+            <h4 class="font-bold text-xs ${titleClass}">${item.title}</h4>
+            <p class="text-[11px] leading-relaxed">${item.text}</p>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('debriefModal').classList.remove('hidden');
+    }
+
+    function closeDebriefModal() {
+      document.getElementById('debriefModal').classList.add('hidden');
+    }
+
+    
+    // Cloud Sync Engine (Google Sheets via Apps Script with Passcode Protection)
+    let cloudScriptUrl = localStorage.getItem('striketrack_cloud_url') || '';
+    let cloudSecretKey = localStorage.getItem('striketrack_cloud_key') || '';
+
+    function openCloudModal() {
+      document.getElementById('inputCloudUrl').value = cloudScriptUrl;
+      document.getElementById('inputCloudKey').value = cloudSecretKey;
+      const statusEl = document.getElementById('cloudStatusMsg');
+      if (cloudScriptUrl) {
+        statusEl.className = 'p-2.5 rounded-lg text-xs font-mono bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 block';
+        statusEl.textContent = 'Connected: Protected cloud sync active';
+      } else {
+        statusEl.className = 'hidden';
+      }
+      document.getElementById('cloudModal').classList.remove('hidden');
+    }
+
+    function closeCloudModal() {
+      document.getElementById('cloudModal').classList.add('hidden');
+    }
+
+    function updateCloudBadge() {
+      const dot = document.getElementById('cloudDot');
+      const text = document.getElementById('cloudBtnText');
+      if (cloudScriptUrl) {
+        dot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+        text.textContent = 'Cloud Synced 🔒';
+      } else {
+        dot.className = 'w-2 h-2 rounded-full bg-slate-500';
+        text.textContent = 'Connect Cloud';
+      }
+    }
+
+    async function testAndSaveCloudUrl() {
+      const url = document.getElementById('inputCloudUrl').value.trim();
+      const key = document.getElementById('inputCloudKey').value.trim();
+      const statusEl = document.getElementById('cloudStatusMsg');
+      
+      if (!url) {
+        statusEl.className = 'p-2.5 rounded-lg text-xs font-mono bg-rose-950/40 border border-rose-800/60 text-rose-300 block';
+        statusEl.textContent = 'Please paste a valid Web App URL';
+        return;
+      }
+      if (!key) {
+        statusEl.className = 'p-2.5 rounded-lg text-xs font-mono bg-amber-950/40 border border-amber-800/60 text-amber-300 block';
+        statusEl.textContent = 'Please enter a Passcode / Secret Key';
+        return;
+      }
+
+      statusEl.className = 'p-2.5 rounded-lg text-xs font-mono bg-indigo-950/40 border border-indigo-800/60 text-indigo-300 block';
+      statusEl.textContent = 'Testing connection & validating passcode...';
+
+      try {
+        const testUrl = url + (url.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(key) + '&check=1';
+        const res = await fetch(testUrl);
+        const data = await res.json();
+        
+        if (data && data.error && data.error.includes('Unauthorized')) {
+          statusEl.className = 'p-2.5 rounded-lg text-xs font-mono bg-rose-950/40 border border-rose-800/60 text-rose-300 block';
+          statusEl.textContent = 'Error: Invalid Passcode. Does not match Apps Script.';
+          return;
+        }
+
+        cloudScriptUrl = url;
+        cloudSecretKey = key;
+        localStorage.setItem('striketrack_cloud_url', url);
+        localStorage.setItem('striketrack_cloud_key', key);
+        statusEl.className = 'p-2.5 rounded-lg text-xs font-mono bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 block';
+        statusEl.textContent = 'Success! Authenticated & connected to your Google Sheet.';
+        updateCloudBadge();
+        syncFromCloud();
+      } catch (err) {
+        // Fallback for CORS on initial fetch
+        cloudScriptUrl = url;
+        cloudSecretKey = key;
+        localStorage.setItem('striketrack_cloud_url', url);
+        localStorage.setItem('striketrack_cloud_key', key);
+        statusEl.className = 'p-2.5 rounded-lg text-xs font-mono bg-emerald-950/40 border border-emerald-800/60 text-emerald-300 block';
+        statusEl.textContent = 'Credentials saved. Protected sync active.';
+        updateCloudBadge();
+      }
+    }
+
+    function disconnectCloud() {
+      if (confirm('Disconnect Google Sheets cloud sync? Your local match history will remain intact.')) {
+        cloudScriptUrl = '';
+        cloudSecretKey = '';
+        localStorage.removeItem('striketrack_cloud_url');
+        localStorage.removeItem('striketrack_cloud_key');
+        updateCloudBadge();
+        closeCloudModal();
+      }
+    }
+
+    async function syncFromCloud() {
+      if (!cloudScriptUrl) return;
+      try {
+        const fetchUrl = cloudScriptUrl + (cloudScriptUrl.includes('?') ? '&' : '?') + 'key=' + encodeURIComponent(cloudSecretKey);
+        const res = await fetch(fetchUrl);
+        const data = await res.json();
+        if (data && data.matches && data.matches.length > 0) {
+          let newFound = 0;
+          data.matches.forEach(rm => {
+            if (!matches.some(lm => lm.id === rm.id)) {
+              matches.unshift(rm);
+              newFound++;
+            }
+          });
+          if (newFound > 0) {
+            localStorage.setItem('striketrack_matches_v3', JSON.stringify(matches));
+            renderApp();
+          }
+        }
+      } catch (e) {
+        console.log('Background cloud fetch skipped / offline');
+      }
+    }
+
+    async function pushMatchToCloud(match) {
+      if (!cloudScriptUrl) return;
+      try {
+        await fetch(cloudScriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: cloudSecretKey, action: 'save_match', match: match })
+        });
+      } catch (err) {
+        console.log('Cloud sync error, saved locally');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => { init(); updateCloudBadge(); syncFromCloud(); });
+  </script>
+
+  <!-- Post-Round Tactical Debrief Modal -->
+  <div id="debriefModal" class="fixed inset-0 bg-black/85 backdrop-blur-md hidden flex items-center justify-center p-4 z-50 overflow-y-auto">
+    <div class="glass-card max-w-lg w-full p-6 border-slate-600 bg-slate-900 shadow-2xl space-y-5 my-8 animate-in fade-in zoom-in duration-200">
+      <div class="flex items-center justify-between border-b border-slate-700/80 pb-3">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg border border-emerald-500/30">
+            📊
+          </div>
+          <div>
+            <h3 class="text-base font-black text-white">Post-Round Tactical Debrief</h3>
+            <p class="text-[11px] text-slate-400" id="debriefSubtitle">Instant match analysis & adjustment advice</p>
+          </div>
+        </div>
+        <button onclick="closeDebriefModal()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <!-- Quick Series Summary Cards -->
+      <div class="grid grid-cols-3 gap-2.5 text-center font-mono">
+        <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60">
+          <span class="text-[10px] text-slate-400 uppercase font-sans font-semibold block">Series</span>
+          <span id="debriefSeries" class="text-xl font-black text-white mt-0.5 block">--</span>
+          <span id="debriefAvg" class="text-[10px] text-slate-400">(-- avg)</span>
+        </div>
+        <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60">
+          <span class="text-[10px] text-slate-400 uppercase font-sans font-semibold block">Game Arc</span>
+          <span id="debriefArc" class="text-xs font-bold text-sky-400 mt-1 block">-- / -- / --</span>
+          <span id="debriefArcDelta" class="text-[10px] text-slate-400">--</span>
+        </div>
+        <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60">
+          <span class="text-[10px] text-slate-400 uppercase font-sans font-semibold block">Vs Season Avg</span>
+          <span id="debriefDelta" class="text-xl font-black mt-0.5 block">--</span>
+          <span id="debriefNewAvg" class="text-[10px] text-slate-400">--</span>
         </div>
       </div>
-      <div>
-        <label class="block text-[11px] text-slate-400 mb-1">Switch Timing (if swapped)</label>
-        <select id="inputSwitchTiming" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-white">
-          <option value="Mid Game 2 (Frames 5-7)">Mid Game 2 (Frames 5-7)</option>
-          <option value="Start of Game 3">Start of Game 3</option>
-          <option value="Mid Game 3">Mid Game 3</option>
-          <option value="None">None (Threw same ball all 3 games)</option>
-        </select>
+
+      <!-- Dynamic Diagnosis -->
+      <div id="debriefDiagnosis" class="space-y-3 text-xs leading-relaxed">
+        <!-- Rendered by JS -->
+      </div>
+
+      <div class="pt-2 border-t border-slate-700/80 flex items-center justify-between">
+        <span class="text-[11px] text-slate-400">Scores saved to persistent league history</span>
+        <button onclick="closeDebriefModal()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs shadow-lg shadow-indigo-950 transition">
+          Got It, Update Dashboard
+        </button>
       </div>
     </div>
+  </div>
 
-    <!-- Lane Condition & Pair Friction Tags -->
-    <div class="p-3 bg-slate-800/50 rounded-lg border border-slate-700/80 space-y-2.5">
-      <span class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider block">Lane Condition & Pair Traffic (Optional)</span>
-      <div class="grid grid-cols-2 gap-2.5">
-        <div>
-          <label class="block text-[11px] text-slate-400 mb-1">Lane Friction</label>
-          <select id="inputFriction" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-white">
-            <option value="Standard / Clean Heads">Standard / Clean Heads</option>
-            <option value="Burnt Heads (Early Hook)">Burnt Heads (Early Hook)</option>
-            <option value="Heavy Carrydown (Skid/Weak)">Heavy Carrydown (Skid/Weak)</option>
-            <option value="Flying Backends">Flying Backends</option>
-          </select>
+
+  <!-- Cloud Sync Settings Modal -->
+  <div id="cloudModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+    <div class="glass-card max-w-md w-full p-6 border-slate-600 bg-slate-900 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-3">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">☁️</span>
+          <h3 class="text-base font-black text-white">Google Sheets Cloud Sync</h3>
         </div>
+        <button onclick="closeCloudModal()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+      </div>
+
+      <p class="text-xs text-slate-300 leading-relaxed">
+        Connect your tracker to your existing <strong>Paul Ziobro</strong> Google Sheet. Scores entered on your phone will automatically push to your spreadsheet in real time and sync to your laptop.
+      </p>
+
+      <div class="space-y-3">
         <div>
-          <label class="block text-[11px] text-slate-400 mb-1">Pair Traffic</label>
-          <select id="inputTraffic" class="w-full bg-slate-800 border border-slate-700 rounded-md p-2 text-white">
-            <option value="Normal League Pace">Normal League Pace</option>
-            <option value="Heavy Cranker / High Rev Pair">Heavy Cranker / High Rev Pair</option>
-            <option value="Stroker / Direct Line Pair">Stroker / Direct Line Pair</option>
-          </select>
+          <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Google Apps Script Web App URL</label>
+          <input type="url" id="inputCloudUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:ring-1 focus:ring-emerald-500 font-mono">
         </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Passcode / Secret Key</label>
+          <input type="password" id="inputCloudKey" placeholder="e.g. StrikeSquad2026" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:ring-1 focus:ring-emerald-500 font-mono">
+          <p class="text-[10px] text-slate-400 mt-1">Must match the SECRET_KEY set in your Google Apps Script.</p>
+        </div>
+
+        <div id="cloudStatusMsg" class="p-2.5 rounded-lg text-xs font-mono hidden"></div>
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-slate-700">
+        <button type="button" onclick="testAndSaveCloudUrl()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-xs shadow-lg shadow-emerald-950 transition">
+          Test & Connect
+        </button>
+        <button type="button" onclick="disconnectCloud()" class="px-3 py-2 text-rose-400 hover:text-rose-300 text-xs font-semibold">
+          Disconnect
+        </button>
       </div>
     </div>
-
-    <div>
-      <label class="block font-semibold text-slate-300 mb-1">Notes (Optional)</label>
-      <input type="text" id="inputNotes" placeholder="e.g., missed two 10-pins in G2; stepped 3 boards left in G3" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-white focus:ring-1 focus:ring-emerald-500">
-    </div>
-
-    <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-700">
-      <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-medium">Cancel</button>
-      <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold shadow-lg shadow-emerald-950">Save Match Record</button>
-    </div>
-  </form>
-</div>
-
-
-  <!-- Quick Series Summary Cards -->
-  <div class="grid grid-cols-3 gap-2.5 text-center font-mono">
-    <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60">
-      <span class="text-[10px] text-slate-400 uppercase font-sans font-semibold block">Series</span>
-      <span id="debriefSeries" class="text-xl font-black text-white mt-0.5 block">--</span>
-      <span id="debriefAvg" class="text-[10px] text-slate-400">(-- avg)</span>
-    </div>
-    <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60">
-      <span class="text-[10px] text-slate-400 uppercase font-sans font-semibold block">Game Arc</span>
-      <span id="debriefArc" class="text-xs font-bold text-sky-400 mt-1 block">-- / -- / --</span>
-      <span id="debriefArcDelta" class="text-[10px] text-slate-400">--</span>
-    </div>
-    <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700/60">
-      <span class="text-[10px] text-slate-400 uppercase font-sans font-semibold block">Vs Season Avg</span>
-      <span id="debriefDelta" class="text-xl font-black mt-0.5 block">--</span>
-      <span id="debriefNewAvg" class="text-[10px] text-slate-400">--</span>
-    </div>
   </div>
 
-  <!-- Dynamic Diagnosis -->
-  <div id="debriefDiagnosis" class="space-y-3 text-xs leading-relaxed"></div>
-
-  <div class="pt-2 border-t border-slate-700/80 flex items-center justify-between">
-    <span class="text-[11px] text-slate-400">Scores saved to persistent league history</span>
-    <button onclick="closeDebriefModal()" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-bold text-xs shadow-lg shadow-indigo-950 transition">
-      Got It, Update Dashboard
-    </button>
-  </div>
-</div>
-
-
-  <p class="text-xs text-slate-300 leading-relaxed">
-    Connect your tracker to your existing <strong>Paul Ziobro</strong> Google Sheet. Scores entered on your phone will automatically push to your spreadsheet in real time and sync to your laptop.
-  </p>
-
-  <div class="space-y-3">
-    <div>
-      <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Google Apps Script Web App URL</label>
-      <input type="url" id="inputCloudUrl" placeholder="https://script.google.com/macros/s/.../exec" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:ring-1 focus:ring-emerald-500 font-mono">
-    </div>
-
-    <div>
-      <label class="block text-[11px] font-bold text-slate-300 uppercase mb-1">Passcode / Secret Key</label>
-      <input type="password" id="inputCloudKey" placeholder="e.g. StrikeSquad2026" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-xs text-white focus:ring-1 focus:ring-emerald-500 font-mono">
-      <p class="text-[10px] text-slate-400 mt-1">Must match the SECRET_KEY set in your Google Apps Script.</p>
-    </div>
-
-    <div id="cloudStatusMsg" class="p-2.5 rounded-lg text-xs font-mono hidden"></div>
-  </div>
-
-  <div class="flex items-center justify-between pt-3 border-t border-slate-700">
-    <button type="button" onclick="testAndSaveCloudUrl()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg font-bold text-xs shadow-lg shadow-emerald-950 transition">
-      Test & Connect
-    </button>
-    <button type="button" onclick="disconnectCloud()" class="px-3 py-2 text-rose-400 hover:text-rose-300 text-xs font-semibold">
-      Disconnect
-    </button>
-  </div>
-</div>
+</body>
+</html>
